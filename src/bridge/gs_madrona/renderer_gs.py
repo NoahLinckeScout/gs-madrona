@@ -34,6 +34,7 @@ class MadronaBatchRendererAdapter:
         num_cameras: int,
         num_lights: int,
         cam_fovs_tensor: torch.Tensor,
+        cam_models_tensor: torch.Tensor,
         cam_znears_tensor: torch.Tensor,
         cam_zfars_tensor: torch.Tensor,
         batch_render_view_width: int = 128,
@@ -58,6 +59,7 @@ class MadronaBatchRendererAdapter:
         cam_fovy = cam_fovs_tensor.cpu().numpy()
         cam_znear = cam_znears_tensor.cpu().numpy()
         cam_zfar = cam_zfars_tensor.cpu().numpy()
+        cam_proj_type = cam_models_tensor.int().cpu().numpy()
 
         # Preload Nvidia compiler runtime if available (i.e. torch is not built from source)
         try:
@@ -76,6 +78,7 @@ class MadronaBatchRendererAdapter:
             num_worlds=num_worlds,
             batch_render_view_width=batch_render_view_width,
             batch_render_view_height=batch_render_view_height,
+            cam_proj_type=cam_proj_type,
             cam_fovy=cam_fovy,
             cam_znear=cam_znear,
             cam_zfar=cam_zfar,

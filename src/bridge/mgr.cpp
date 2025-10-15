@@ -666,6 +666,8 @@ Manager::Impl * Manager::Impl::make(
     Vector3 *geom_sizes_gpu = (Vector3 *)cu::allocGPU(
         sizeof(Vector3) * gs_model.numGeoms);
     float *cam_fovy = (float *)cu::allocGPU(sizeof(float) * gs_model.numCams);
+    int32_t *cam_proj_type =
+        (int32_t *)cu::allocGPU(sizeof(int32_t) * gs_model.numCams);
     float *cam_zfar = (float *)cu::allocGPU(sizeof(float) * gs_model.numCams);
     float *cam_znear = (float *)cu::allocGPU(sizeof(float) * gs_model.numCams);
 
@@ -677,6 +679,8 @@ Manager::Impl * Manager::Impl::make(
         sizeof(Vector3) * gs_model.numGeoms, cudaMemcpyHostToDevice));
     REQ_CUDA(cudaMemcpy(cam_fovy, gs_model.camFovy,
         sizeof(float) * gs_model.numCams, cudaMemcpyHostToDevice));
+    REQ_CUDA(cudaMemcpy(cam_proj_type, gs_model.camProjType,
+        sizeof(int32_t) * gs_model.numCams, cudaMemcpyHostToDevice));
     REQ_CUDA(cudaMemcpy(cam_znear, gs_model.camZNear,
         sizeof(float) * gs_model.numCams, cudaMemcpyHostToDevice));
     REQ_CUDA(cudaMemcpy(cam_zfar, gs_model.camZFar,
@@ -688,6 +692,7 @@ Manager::Impl * Manager::Impl::make(
     sim_cfg.camFovy = cam_fovy;
     sim_cfg.camZNear = cam_znear;
     sim_cfg.camZFar = cam_zfar;
+    sim_cfg.camProjType = cam_proj_type;
 
     HeapArray<Sim::WorldInit> world_inits(mgr_cfg.numWorlds);
 
@@ -746,6 +751,7 @@ Manager::Impl * Manager::Impl::make(
     cu::deallocGPU(geom_data_ids_gpu);
     cu::deallocGPU(geom_sizes_gpu);
     cu::deallocGPU(cam_fovy);
+    cu::deallocGPU(cam_proj_type);
     cu::deallocGPU(cam_znear);
     cu::deallocGPU(cam_zfar);
 

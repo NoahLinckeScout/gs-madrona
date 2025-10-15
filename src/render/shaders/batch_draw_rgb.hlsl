@@ -96,11 +96,14 @@ void vert(in uint vid : SV_VertexID,
             to_view_translation;
     float z_far = view_data.zFar;
     float z_near = view_data.zNear;
-    float4 clip_pos = float4(
-        view_data.xScale * view_pos.x,
-        view_data.yScale * view_pos.z,
-        z_far / (z_far - z_near) * view_pos.y + (z_far * z_near) / (z_near - z_far),
-        view_pos.y);
+    float clip_z = z_far / (z_far - z_near) * view_pos.y +
+                   (z_far * z_near) / (z_near - z_far);
+    PerspectiveCameraData proj_view = view_data;
+    proj_view.projectionType = MADRONA_PROJECTION_PERSPECTIVE;
+    float4 clip_pos = projectToClip(
+        proj_view,
+        view_pos,
+        clip_z);
 
 #if 1
     uint something = min(0, instanceOffsets[0]) +

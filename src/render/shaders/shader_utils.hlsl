@@ -26,6 +26,7 @@ PerspectiveCameraData unpackViewData(PackedViewData packed)
     const float4 d0 = packed.data[0];
     const float4 d1 = packed.data[1];
     const float4 d2 = packed.data[2];
+    const float4 d3 = packed.data[3];
 
     PerspectiveCameraData cam;
     cam.pos = d0.xyz;
@@ -35,6 +36,10 @@ PerspectiveCameraData unpackViewData(PackedViewData packed)
     cam.zNear = d2.y;
     cam.zFar = d2.z;
     cam.worldID = asint(d2.w);
+    cam.fisheyeThetaMax = d3.x;
+    cam.projectionType = asuint(d3.y);
+    cam.aspectRatio = d3.z;
+    cam.padding1 = d3.w;
 
     return cam;
 }
@@ -137,6 +142,51 @@ void computeCompositeTransform(float3 obj_t,
 {
     to_view_translation = rotateVec(cam_r_inv, obj_t - cam_t);
     to_view_rotation = normalize(composeQuats(cam_r_inv, obj_r));
+}
+
+float4 projectToClip(PerspectiveCameraData view_data,
+                     float3 view_pos,
+                     float clip_z)
+{
+    if (view_data.projectionType == MADRONA_PROJECTION_PERSPECTIVE) {
+        return float4(
+            view_data.xScale * view_pos.x,
+            view_data.yScale * view_pos.z,
+            clip_z,
+            view_pos.y);
+    }
+
+    float3 dir = normalize(view_pos);
+    float forward = dir.y;
+    float theta_max = max(view_data.fisheyeThetaMax, 1e-4);
+    float theta = acos(clamp(forward, -1.0f, 1.0f));
+
+    float sin_theta = sqrt(max(1.0f - forward * forward, 0.0f));
+    float2 plane_dir = sin_theta > 1e-5f ? float2(dir.x, dir.z) / sin_theta : float2(0.0f, 0.0f);
+    float raw_r = theta_max > 0.0f ? (theta / theta_max) : 0.0f;
+    float norm_r = min(raw_r, 1.0f);
+
+    float aspect = max(view_data.aspectRatio, 1e-6f);
+    float2 aspect_scale = aspect >= 1.0f ? float2(1.0f / aspect, 1.0f)
+                                         : float2(1.0f, aspect);
+    float2 ndc = norm_r * aspect_scale * plane_dir;
+
+    float depth = length(view_pos);
+    float clip_w = max(depth, 1e-3f);
+
+    float depth_ratio = clamp((depth - view_data.zNear) / (view_data.zFar - view_data.zNear), 0.0f, 1.0f);
+    float ndc_z = depth_ratio * 2.0f - 1.0f;
+    float clip_z_out = ndc_z * clip_w;
+
+    if (raw_r > 1.0f) {
+        clip_w = -clip_w;
+        clip_z_out = -clip_z_out;
+    }
+
+    return float4(ndc.x * clip_w,
+                  -ndc.y * clip_w,
+                  clip_z_out,
+                  clip_w);
 }
 
 // We are basically packing 3 uints into 2. 21 bits per uint except for 22 

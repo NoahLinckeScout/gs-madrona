@@ -68,6 +68,8 @@ NB_MODULE(_gs_madrona_batch_renderer, m) {
             int64_t num_worlds,
             int64_t batch_render_view_width,
             int64_t batch_render_view_height,
+            nb::ndarray<const int32_t, nb::shape<-1>,
+                nb::device::cpu> cam_proj_type,
             nb::ndarray<const float, nb::shape<-1>,
                 nb::device::cpu> cam_fovy,
             nb::ndarray<const float, nb::shape<-1>,
@@ -130,6 +132,7 @@ NB_MODULE(_gs_madrona_batch_renderer, m) {
                 .camFovy = (float *)cam_fovy.data(),
                 .camZNear = (float *)cam_znear.data(),
                 .camZFar = (float *)cam_zfar.data(),
+                .camProjType = (int32_t *)cam_proj_type.data(),
             };
 
             new (self) Manager(Manager::Config {
@@ -171,6 +174,7 @@ NB_MODULE(_gs_madrona_batch_renderer, m) {
            nb::arg("num_worlds"),
            nb::arg("batch_render_view_width"),
            nb::arg("batch_render_view_height"),
+           nb::arg("cam_proj_type"),
            nb::arg("cam_fovy"),
            nb::arg("cam_znear"),
            nb::arg("cam_zfar"),

@@ -15,6 +15,14 @@ struct RenderCamera {
     float zFar;
 
     math::Vector3 cameraOffset;
+
+    enum class Projection : uint32_t {
+        Perspective = 0,
+        EquidistantFisheye = 1,
+    };
+
+    Projection projection;
+    float fisheyeFovRadians;
 };
 
 // This will be attached to any renderable entity
@@ -41,6 +49,10 @@ struct alignas(16) PerspectiveCameraData {
     float zNear;
     float zFar;
     int32_t worldIDX;
+    float fisheyeThetaMax;
+    int32_t projectionType;
+    float aspectRatio;
+    float padding1;
 };
 
 // For private usage - not to be used by user.
@@ -230,7 +242,8 @@ namespace RenderingSystem {
                             float vfov_degrees,
                             float z_near,
                             float z_far,
-                            const math::Vector3 &camera_offset);
+                            const math::Vector3 &camera_offset,
+                            RenderCamera::Projection projection = RenderCamera::Projection::Perspective);
 
     // Need to call these before destroying entities
     void cleanupViewingEntity(Context &ctx,

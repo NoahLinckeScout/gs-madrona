@@ -177,8 +177,19 @@ Sim::Sim(Engine &ctx,
         }
         ctx.get<Position>(cam) = Vector3::zero();
         ctx.get<Rotation>(cam) = Quat { 1, 0, 0, 0 };
+        auto projection =
+            (render::RenderCamera::Projection)cfg.camProjType[cam_idx];
+        float vfov_degrees = cfg.camFovy[cam_idx];
+        float z_near = cfg.camZNear[cam_idx];
+        float z_far = cfg.camZFar[cam_idx];
         render::RenderingSystem::attachEntityToView(
-            ctx, cam, cfg.camFovy[cam_idx], cfg.camZNear[cam_idx], cfg.camZFar[cam_idx], Vector3::zero());
+            ctx,
+            cam,
+            vfov_degrees,
+            z_near,
+            z_far,
+            Vector3::zero(),
+            projection);
     }
     
     for (CountT light_idx = 0; light_idx < (CountT)cfg.numLights; light_idx++) {

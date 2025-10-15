@@ -69,8 +69,15 @@ void shadowGen(uint3 idx : SV_DispatchThreadID)
 
     float far_width, near_width, far_height, near_height;
 
-    float tan_half_fov = -1.0f / unpackedView.yScale;
-    float aspect = -unpackedView.yScale / unpackedView.xScale;
+    float tan_half_fov;
+    float aspect;
+    if (unpackedView.projectionType == MADRONA_PROJECTION_PERSPECTIVE) {
+        tan_half_fov = -1.0f / unpackedView.yScale;
+        aspect = -unpackedView.yScale / unpackedView.xScale;
+    } else {
+        tan_half_fov = tan(unpackedView.fisheyeThetaMax);
+        aspect = max(unpackedView.aspectRatio, 1e-3f);
+    }
     float near = 1.0f;
     float far = 80.0f;
 

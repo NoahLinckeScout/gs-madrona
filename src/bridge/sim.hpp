@@ -60,6 +60,7 @@ struct Sim : public madrona::WorldBase {
         float *camFovy;
         float *camZNear;
         float *camZFar;
+        int32_t *camProjType;
         const madrona::render::RenderECSBridge *renderBridge;
         bool useDebugCamEntity;
         bool useRT;

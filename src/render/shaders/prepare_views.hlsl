@@ -155,30 +155,39 @@ void main(uint3 tid       : SV_DispatchThreadID,
 
         // printf("Num instances %u for world\n", sm.numInstancesForWorld);
 
-        float4 qInv = quatInv(view_data.rot);
+        if (view_data.projectionType == MADRONA_PROJECTION_PERSPECTIVE) {
+            float4 qInv = quatInv(view_data.rot);
 
-        float3 front = rotateVec(qInv,float3(0, 1, 0));
-        float3 up = rotateVec(qInv,float3(0, 0, 1));
-        float3 right = cross(front,up);
+            float3 front = rotateVec(qInv,float3(0, 1, 0));
+            float3 up = rotateVec(qInv,float3(0, 0, 1));
+            float3 right = cross(front,up);
 
-        float zFar = 20000; //Dummy value for now
-        float aspectRatio = view_data.yScale/view_data.xScale;
-        float farPlaneHalfHeight = zFar; //Assumed fov of 90
-        float farPlaneHalfWidth = farPlaneHalfHeight * aspectRatio;
-        float3 farVec = zFar * front;
+            float zFar = 20000; //Dummy value for now
+            float aspectRatio = view_data.yScale/view_data.xScale;
+            float farPlaneHalfHeight = zFar; //Assumed fov of 90
+            float farPlaneHalfWidth = farPlaneHalfHeight * aspectRatio;
+            float3 farVec = zFar * front;
 
-        sm.nearPlane = float4(front,dot(-front,view_data.pos+view_data.zNear*front));
-        sm.farPlane = float4(-front,dot(front,view_data.pos+farVec));
+            sm.nearPlane = float4(front,dot(-front,view_data.pos+view_data.zNear*front));
+            sm.farPlane = float4(-front,dot(front,view_data.pos+farVec));
 
-        float3 leftNorm = cross(up,farVec - farPlaneHalfWidth*right);
-        sm.leftPlane = float4(leftNorm,dot(-leftNorm,view_data.pos));
-        float3 rightNorm = cross(farVec + farPlaneHalfWidth*right,up);
-        sm.rightPlane = float4(rightNorm,dot(-rightNorm,view_data.pos));
+            float3 leftNorm = cross(up,farVec - farPlaneHalfWidth*right);
+            sm.leftPlane = float4(leftNorm,dot(-leftNorm,view_data.pos));
+            float3 rightNorm = cross(farVec + farPlaneHalfWidth*right,up);
+            sm.rightPlane = float4(rightNorm,dot(-rightNorm,view_data.pos));
 
-        float3 bottomNorm = cross(right, farVec - up * farPlaneHalfHeight);
-        sm.bottomPlane = float4(bottomNorm,dot(-bottomNorm,view_data.pos));
-        float3 topNorm = cross(farVec + up * farPlaneHalfHeight, right);
-        sm.topPlane = float4(topNorm,dot(-topNorm,view_data.pos));
+            float3 bottomNorm = cross(right, farVec - up * farPlaneHalfHeight);
+            sm.bottomPlane = float4(bottomNorm,dot(-bottomNorm,view_data.pos));
+            float3 topNorm = cross(farVec + up * farPlaneHalfHeight, right);
+            sm.topPlane = float4(topNorm,dot(-topNorm,view_data.pos));
+        } else {
+            sm.nearPlane = float4(0, 0, 0, 0);
+            sm.farPlane = float4(0, 0, 0, 0);
+            sm.leftPlane = float4(0, 0, 0, 0);
+            sm.rightPlane = float4(0, 0, 0, 0);
+            sm.bottomPlane = float4(0, 0, 0, 0);
+            sm.topPlane = float4(0, 0, 0, 0);
+        }
     }
 
     GroupMemoryBarrierWithGroupSync();
@@ -208,21 +217,23 @@ void main(uint3 tid       : SV_DispatchThreadID,
         float3 center = (txfm_aabb.pMin + txfm_aabb.pMax)/2;
         float3 extents = txfm_aabb.pMax - center;
 
-        // Don't do culling yet.
-
         int some_value = 0;
 
         total++;
 
-        if((!planeAABB(sm.nearPlane,center,extents) || !planeAABB(sm.leftPlane,center,extents) ||
-           !planeAABB(sm.rightPlane,center,extents) || !planeAABB(sm.bottomPlane,center,extents) ||
-           !planeAABB(sm.topPlane,center,extents) || !planeAABB(sm.farPlane,center,extents))){
+        if (sm.camera.projectionType == MADRONA_PROJECTION_PERSPECTIVE) {
+            bool inside = planeAABB(sm.nearPlane, center, extents) &&
+                          planeAABB(sm.leftPlane, center, extents) &&
+                          planeAABB(sm.rightPlane, center, extents) &&
+                          planeAABB(sm.bottomPlane, center, extents) &&
+                          planeAABB(sm.topPlane, center, extents) &&
+                          planeAABB(sm.farPlane, center, extents);
 
-            num_culled++;
-
-            some_value += (int)aabbs[0].data[0].x;
-
-            continue;
+            if (!inside) {
+                num_culled++;
+                some_value += (int)aabbs[0].data[0].x;
+                continue;
+            }
         }
 
         ObjectData obj = objectDataBuffer[instance_data.objectID];

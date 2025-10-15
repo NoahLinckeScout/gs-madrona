@@ -57,6 +57,7 @@ struct GSModel {
     float *camFovy;
     float *camZNear;
     float *camZFar;
+    int32_t *camProjType;
 };
 
 // The Manager class encapsulates the linkage between the outside training

@@ -2,6 +2,8 @@
 #include <bit>
 #endif
 
+#include <algorithm>
+
 #include <madrona/mesh_bvh.hpp>
 #include <madrona/render/ecs.hpp>
 #include <madrona/components.hpp>
@@ -326,13 +328,33 @@ inline void viewTransformUpdate(Context &ctx,
     PerspectiveCameraData &cam_data = system_state.viewsCPU[view_id];
 #endif
 
-    float x_scale = cam.fovScale / aspect_ratio;
-    float y_scale = -cam.fovScale;
+    float x_scale;
+    float y_scale;
+
+    if (cam.projection == RenderCamera::Projection::Perspective) {
+        x_scale = cam.fovScale / aspect_ratio;
+        y_scale = -cam.fovScale;
+        cam_data.fisheyeThetaMax = 0.f;
+    } else {
+        float fisheye_fov = std::min(
+            cam.fisheyeFovRadians,
+            math::pi - 1e-3f);
+        float half_fov = std::max(fisheye_fov * 0.5f, 1e-3f);
+        float perspective_scale = 1.f / tanf(half_fov);
+
+        x_scale = perspective_scale / aspect_ratio;
+        y_scale = -perspective_scale;
+        cam_data.fisheyeThetaMax = fisheye_fov * 0.5f;
+    }
 
     cam_data.xScale = x_scale;
     cam_data.yScale = y_scale;
     cam_data.zNear = cam.zNear;
     cam_data.zFar = cam.zFar;
+    cam_data.projectionType =
+        cam.projection == RenderCamera::Projection::Perspective ? 0 : 1;
+    cam_data.aspectRatio = aspect_ratio;
+    cam_data.padding1 = 0.f;
 
     Vector3 camera_pos = pos + cam.cameraOffset;
     cam_data.position = camera_pos;
@@ -709,13 +731,26 @@ void attachEntityToView(Context &ctx,
                         float vfov_degrees,
                         float z_near,
                         float z_far,
-                        const math::Vector3 &camera_offset)
+                        const math::Vector3 &camera_offset,
+                        RenderCamera::Projection projection)
 {
-    float fov_scale = 1.0f / tanf(toRadians(vfov_degrees * 0.5f));
+    float fov_scale = 0.f;
+    float fisheye_fov_rad = 0.f;
+    if (projection == RenderCamera::Projection::Perspective) {
+        fov_scale = 1.0f / tanf(toRadians(vfov_degrees * 0.5f));
+    } else {
+        fisheye_fov_rad = toRadians(vfov_degrees);
+    }
 
     Entity camera_entity = ctx.makeEntity<RenderCameraArchetype>();
     ctx.get<RenderCamera>(e) = { 
-        camera_entity, fov_scale, z_near, z_far, camera_offset 
+        camera_entity,
+        projection == RenderCamera::Projection::Perspective ? fov_scale : 0.f,
+        z_near,
+        z_far,
+        camera_offset,
+        projection,
+        projection == RenderCamera::Projection::Perspective ? 0.f : fisheye_fov_rad
     };
 
     PerspectiveCameraData &cam_data = 
@@ -739,8 +774,21 @@ void attachEntityToView(Context &ctx,
     bool raycast_enabled = false;
 #endif
 
-    float x_scale = fov_scale / aspect_ratio;
-    float y_scale = -fov_scale;
+    float x_scale;
+    float y_scale;
+    float theta_max = 0.f;
+    int32_t proj_type = 0;
+
+    if (projection == RenderCamera::Projection::Perspective) {
+        x_scale = fov_scale / aspect_ratio;
+        y_scale = -fov_scale;
+        proj_type = 0;
+    } else {
+        x_scale = 1.f;
+        y_scale = -1.f;
+        theta_max = fisheye_fov_rad * 0.5f;
+        proj_type = 1;
+    }
 
     cam_data = PerspectiveCameraData {
         { /* Position */ }, 
@@ -748,7 +796,11 @@ void attachEntityToView(Context &ctx,
         x_scale, y_scale, 
         z_near, 
         z_far,
-        ctx.worldID().idx
+        ctx.worldID().idx,
+        theta_max,
+        proj_type,
+        aspect_ratio,
+        0.f
     };
 
     if (raycast_enabled) {

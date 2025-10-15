@@ -177,6 +177,9 @@ struct ObjectData {
     int32_t numMeshes;
 };
 
+static const uint MADRONA_PROJECTION_PERSPECTIVE = 0;
+static const uint MADRONA_PROJECTION_FISHEYE_EQUIDISTANT = 1;
+
 struct PackedInstanceData {
     float4 data[4];
 };
@@ -196,7 +199,7 @@ struct EngineInstanceData {
 };
 
 struct PackedViewData {
-    float4 data[3];
+    float4 data[4];
 };
 
 struct ShadowViewData {
@@ -234,6 +237,10 @@ struct PerspectiveCameraData {
     float zNear;
     float zFar;
     int32_t worldID;
+    float fisheyeThetaMax;
+    uint32_t projectionType;
+    float aspectRatio;
+    float padding1;
 };
 
 // Make sure that this becomes packed in the future.
@@ -245,6 +252,10 @@ struct PerspectiveCameraDataBR {
     float zNear;
     int viewIDX;
     int worldIDX;
+    float fisheyeThetaMax;
+    uint32_t projectionType;
+    float aspectRatio;
+    int pad;
 };
 
 // Instance data that is needed to render an object

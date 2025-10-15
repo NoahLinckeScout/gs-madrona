@@ -67,11 +67,12 @@ float4 vert(in uint vid : SV_VertexID,
         rotateVec(to_view_rotation, instance_data.scale * vert.position) +
             to_view_translation;
 
-    float4 clip_pos = float4(
-        view_data.xScale * view_pos.x,
-        view_data.yScale * view_pos.z,
-        view_data.zNear,
-        view_pos.y);
+    PerspectiveCameraData proj_view = view_data;
+    proj_view.projectionType = MADRONA_PROJECTION_PERSPECTIVE;
+    float4 clip_pos = projectToClip(
+        proj_view,
+        view_pos,
+        view_data.zNear);
 
     // v2f.viewPos = view_pos;
 #if 0
