@@ -128,10 +128,8 @@ float4 vert(in uint vid : SV_VertexID,
                        1.0);
 #endif
 
-        PerspectiveCameraData proj_view = view_data;
-        proj_view.projectionType = MADRONA_PROJECTION_PERSPECTIVE;
         clip_pos = projectToClip(
-            proj_view,
+            view_data,
             view_pos,
             view_data.zNear);
     }
