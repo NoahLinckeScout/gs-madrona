@@ -46,78 +46,30 @@ inline Vector3 calculateOutRay(PerspectiveCameraData *view_data,
     Vector3 ray_start = view_data->position;
     Vector3 look_at = rot.inv().rotateVec({0, 1, 0});
  
-    if (view_data->projectionType == 1u && view_data->fisheyeThetaMax > 0.f) {
-        float width = (float)bvhParams.renderOutputWidth;
-        float height = (float)bvhParams.renderOutputHeight;
+    // const float h = tanf(theta / 2);
+    const float w = 1.0f / view_data->xScale;
+    const float h = 1.0f / -view_data->yScale;
 
-        float pixel_u = ((float)pixel_x + 0.5f) / width;
-        float pixel_v = ((float)pixel_y + 0.5f) / height;
+    const auto viewport_height = 2 * h;
+    const auto viewport_width = 2 * w;
+    const auto forward = look_at.normalize();
 
-        math::Vector2 ndc {
-            pixel_u * 2.f - 1.f,
-            pixel_v * 2.f - 1.f,
-        };
-        ndc.y = -ndc.y;
+    auto u = rot.inv().rotateVec({1, 0, 0});
+    auto v = cross(forward, u).normalize();
 
-        float aspect = view_data->aspectRatio;
-        if (aspect <= 0.f) {
-            aspect = width / height;
-        }
+    auto horizontal = u * viewport_width;
+    auto vertical = v * viewport_height;
 
-        math::Vector2 aspect_scale = aspect >= 1.f ?
-            math::Vector2{1.f / aspect, 1.f} :
-            math::Vector2{1.f, aspect};
+    auto lower_left_corner = ray_start - horizontal / 2 - vertical / 2 + forward;
+  
+    float pixel_u = ((float)pixel_x + 0.5f) / (float)bvhParams.renderOutputWidth;
+    float pixel_v = ((float)pixel_y + 0.5f) / (float)bvhParams.renderOutputHeight;
 
-        math::Vector2 scaled {
-            ndc.x / aspect_scale.x,
-            ndc.y / aspect_scale.y,
-        };
+    Vector3 ray_dir = lower_left_corner + pixel_u * horizontal + 
+        pixel_v * vertical - ray_start;
+    ray_dir = ray_dir.normalize();
 
-        float r_norm = sqrtf(scaled.x * scaled.x + scaled.y * scaled.y);
-        r_norm = fminf(r_norm, 1.f);
-
-        float theta_max = view_data->fisheyeThetaMax;
-        float theta = r_norm * theta_max;
-
-        math::Vector2 dir_plane = r_norm > 1e-6f ?
-            math::Vector2{scaled.x / r_norm, scaled.y / r_norm} :
-            math::Vector2{0.f, 0.f};
-
-        float sin_theta = sinf(theta);
-        float cos_theta = cosf(theta);
-
-        Vector3 dir_cam {
-            dir_plane.x * sin_theta,
-            cos_theta,
-            dir_plane.y * sin_theta,
-        };
-
-        Vector3 ray_dir = rot.inv().rotateVec(dir_cam).normalize();
-        return ray_dir;
-    } else {
-        const float w = 1.0f / view_data->xScale;
-        const float h = 1.0f / -view_data->yScale;
-
-        const auto viewport_height = 2 * h;
-        const auto viewport_width = 2 * w;
-        const auto forward = look_at.normalize();
-
-        auto u = rot.inv().rotateVec({1, 0, 0});
-        auto v = cross(forward, u).normalize();
-
-        auto horizontal = u * viewport_width;
-        auto vertical = v * viewport_height;
-
-        auto lower_left_corner = ray_start - horizontal / 2 - vertical / 2 + forward;
-
-        float pixel_u = ((float)pixel_x + 0.5f) / (float)bvhParams.renderOutputWidth;
-        float pixel_v = ((float)pixel_y + 0.5f) / (float)bvhParams.renderOutputHeight;
-
-        Vector3 ray_dir = lower_left_corner + pixel_u * horizontal +
-            pixel_v * vertical - ray_start;
-        ray_dir = ray_dir.normalize();
-        return ray_dir;
-    }
+    return ray_dir;
 }
 
 struct TraceResult {
@@ -1132,3 +1084,4 @@ extern "C" __global__ void bvhRaycastEntry()
         __syncwarp();
     }
 }
+
