@@ -161,11 +161,12 @@ void main(uint3 tid       : SV_DispatchThreadID,
         float3 up = rotateVec(qInv,float3(0, 0, 1));
         float3 right = cross(front,up);
 
-        float zFar = 20000; //Dummy value for now
-        float aspectRatio = view_data.yScale/view_data.xScale;
-        float farPlaneHalfHeight = zFar; //Assumed fov of 90
+        float farDist = view_data.zFar;
+        float aspectRatio = view_data.yScale / view_data.xScale;
+        float tanHalfVert = 1.0f / -view_data.yScale;
+        float farPlaneHalfHeight = farDist * tanHalfVert;
         float farPlaneHalfWidth = farPlaneHalfHeight * aspectRatio;
-        float3 farVec = zFar * front;
+        float3 farVec = farDist * front;
 
         sm.nearPlane = float4(front,dot(-front,view_data.pos+view_data.zNear*front));
         sm.farPlane = float4(-front,dot(front,view_data.pos+farVec));
