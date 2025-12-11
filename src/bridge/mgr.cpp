@@ -154,26 +154,33 @@ struct Manager::Impl {
                                  Quat *cam_rotations,
                                  cudaStream_t strm)
     {
-        cudaMemcpyAsync(
-            gpuExec.getExported((CountT)ExportID::InstancePositions),
-            geom_positions,
-            sizeof(Vector3) * numGeoms * cfg.numWorlds,
-            cudaMemcpyDeviceToDevice, strm);
-        cudaMemcpyAsync(
-            gpuExec.getExported((CountT)ExportID::InstanceRotations),
-            geom_rotations,
-            sizeof(Quat) * numGeoms * cfg.numWorlds,
-            cudaMemcpyDeviceToDevice, strm);
-        cudaMemcpyAsync(
-            gpuExec.getExported((CountT)ExportID::CameraPositions),
-            cam_positions,
-            sizeof(Vector3) * numCams * cfg.numWorlds,
-            cudaMemcpyDeviceToDevice, strm);
-        cudaMemcpyAsync(
-            gpuExec.getExported((CountT)ExportID::CameraRotations),
-            cam_rotations,
-            sizeof(Quat) * numCams * cfg.numWorlds,
-            cudaMemcpyDeviceToDevice, strm);
+        uint32_t total_geoms = numGeoms * cfg.numWorlds;
+        if (geom_positions != nullptr) {
+            cudaMemcpyAsync(
+                gpuExec.getExported((CountT)ExportID::InstancePositions),
+                geom_positions, sizeof(Vector3) * total_geoms, cudaMemcpyDeviceToDevice, strm
+            );
+        }
+        if (geom_rotations != nullptr) {
+            cudaMemcpyAsync(
+                gpuExec.getExported((CountT)ExportID::InstanceRotations),
+                geom_rotations, sizeof(Quat) * total_geoms, cudaMemcpyDeviceToDevice, strm
+            );
+        }
+
+        uint32_t total_cams = numCams * cfg.numWorlds;
+        if (cam_positions != nullptr) {
+            cudaMemcpyAsync(
+                gpuExec.getExported((CountT)ExportID::CameraPositions),
+                cam_positions, sizeof(Vector3) * total_cams, cudaMemcpyDeviceToDevice, strm
+            );
+        }
+        if (cam_rotations != nullptr) {
+            cudaMemcpyAsync(
+                gpuExec.getExported((CountT)ExportID::CameraRotations),
+                cam_rotations, sizeof(Quat) * total_cams, cudaMemcpyDeviceToDevice, strm
+            );
+        }
     }
 
     inline void copyInProperties(
@@ -190,63 +197,77 @@ struct Manager::Impl {
         float *light_intensity,
         cudaStream_t strm)
     {
-        cudaMemcpyAsync(
-            gpuExec.getExported((CountT)ExportID::InstanceMatOverrides),
-            mat_overrides,
-            sizeof(MaterialOverride) * numGeoms * cfg.numWorlds,
-            cudaMemcpyDeviceToDevice, strm);
-        cudaMemcpyAsync(
-            gpuExec.getExported((CountT)ExportID::InstanceColorOverrides),
-            col_overrides,
-            sizeof(ColorOverride) * numGeoms * cfg.numWorlds,
-            cudaMemcpyDeviceToDevice, strm);
-        cudaMemcpyAsync(
-            gpuExec.getExported((CountT)ExportID::InstanceScales),
-            geom_sizes,
-            sizeof(Diag3x3) * numGeoms * cfg.numWorlds,
-            cudaMemcpyDeviceToDevice, strm);
+        uint32_t total_geoms = numGeoms * cfg.numWorlds;
+        if (mat_overrides != nullptr) {
+            cudaMemcpyAsync(
+                gpuExec.getExported((CountT)ExportID::InstanceMatOverrides),
+                mat_overrides, sizeof(MaterialOverride) * total_geoms, cudaMemcpyDeviceToDevice, strm
+            );
+        }
+        // TODO: Remove ColorOverride from ECS
+        if (col_overrides != nullptr) {
+            cudaMemcpyAsync(
+                gpuExec.getExported((CountT)ExportID::InstanceColorOverrides),
+                col_overrides, sizeof(ColorOverride) * total_geoms, cudaMemcpyDeviceToDevice, strm
+            );
+        }
+        if (geom_sizes != nullptr) {
+            cudaMemcpyAsync(
+                gpuExec.getExported((CountT)ExportID::InstanceScales),
+                geom_sizes, sizeof(Diag3x3) * total_geoms, cudaMemcpyDeviceToDevice, strm
+            );
+        }
 
         // Copy light properties to GPU
-        cudaMemcpyAsync(
-            gpuExec.getExported((CountT)ExportID::LightPositions),
-            light_pos,
-            sizeof(Vector3) * numLights * cfg.numWorlds,
-            cudaMemcpyDeviceToDevice, strm);
-        cudaMemcpyAsync(
-            gpuExec.getExported((CountT)ExportID::LightDirections),
-            light_dir,
-            sizeof(Vector3) * numLights * cfg.numWorlds,
-            cudaMemcpyDeviceToDevice, strm);
-        cudaMemcpyAsync(
-            gpuExec.getExported((CountT)ExportID::LightColors),
-            light_color,
-            sizeof(ColorOverride) * numLights * cfg.numWorlds,
-            cudaMemcpyDeviceToDevice, strm);
-        cudaMemcpyAsync(
-            gpuExec.getExported((CountT)ExportID::LightTypes),
-            light_isdir,
-            sizeof(bool) * numLights * cfg.numWorlds,
-            cudaMemcpyDeviceToDevice, strm);
-        cudaMemcpyAsync(
-            gpuExec.getExported((CountT)ExportID::LightShadows),
-            light_castshadow,
-            sizeof(bool) * numLights * cfg.numWorlds,
-            cudaMemcpyDeviceToDevice, strm);
-        cudaMemcpyAsync(
-            gpuExec.getExported((CountT)ExportID::LightCutoffAngles),
-            light_cutoff,
-            sizeof(float) * numLights * cfg.numWorlds,
-            cudaMemcpyDeviceToDevice, strm);
-        cudaMemcpyAsync(
-            gpuExec.getExported((CountT)ExportID::LightAttenuations),
-            light_attenuation,
-            sizeof(float) * numLights * cfg.numWorlds,
-            cudaMemcpyDeviceToDevice, strm);
-        cudaMemcpyAsync(
-            gpuExec.getExported((CountT)ExportID::LightIntensities),
-            light_intensity,
-            sizeof(float) * numLights * cfg.numWorlds,
-            cudaMemcpyDeviceToDevice, strm);
+        uint32_t total_lights = numLights * cfg.numWorlds;
+        if (light_pos != nullptr) {
+            cudaMemcpyAsync(
+                gpuExec.getExported((CountT)ExportID::LightPositions),
+                light_pos, sizeof(Vector3) * total_lights, cudaMemcpyDeviceToDevice, strm
+            );
+        }
+        if (light_dir != nullptr) {
+            cudaMemcpyAsync(
+                gpuExec.getExported((CountT)ExportID::LightDirections),
+                light_dir, sizeof(Vector3) * total_lights, cudaMemcpyDeviceToDevice, strm
+            );
+        }
+        if (light_color != nullptr) {
+            cudaMemcpyAsync(
+                gpuExec.getExported((CountT)ExportID::LightColors),
+                light_color, sizeof(ColorOverride) * total_lights, cudaMemcpyDeviceToDevice, strm
+            );
+        }
+        if (light_isdir != nullptr) {
+            cudaMemcpyAsync(
+                gpuExec.getExported((CountT)ExportID::LightTypes),
+                light_isdir, sizeof(bool) * total_lights, cudaMemcpyDeviceToDevice, strm
+            );
+        }
+        if (light_castshadow != nullptr) {
+            cudaMemcpyAsync(
+                gpuExec.getExported((CountT)ExportID::LightShadows),
+                light_castshadow, sizeof(bool) * total_lights, cudaMemcpyDeviceToDevice, strm
+            );
+        }
+        if (light_cutoff != nullptr) {
+            cudaMemcpyAsync(
+                gpuExec.getExported((CountT)ExportID::LightCutoffAngles),
+                light_cutoff, sizeof(float) * total_lights, cudaMemcpyDeviceToDevice, strm
+            );
+        }
+        if (light_attenuation != nullptr) {
+            cudaMemcpyAsync(
+                gpuExec.getExported((CountT)ExportID::LightAttenuations),
+                light_attenuation, sizeof(float) * total_lights, cudaMemcpyDeviceToDevice, strm
+            );
+        }
+        if (light_intensity != nullptr) {
+            cudaMemcpyAsync(
+                gpuExec.getExported((CountT)ExportID::LightIntensities),
+                light_intensity, sizeof(float) * total_lights, cudaMemcpyDeviceToDevice, strm
+            );
+        }
     }
 
     inline void init(const Vector3 *geom_positions,
@@ -265,11 +286,8 @@ struct Manager::Impl {
                      const float *light_attenuation,
                      const float *light_intensity)
     {
-        MWCudaLaunchGraph init_graph =
-            gpuExec.buildLaunchGraph(TaskGraphID::Init);
-        
-        MWCudaLaunchGraph render_init_graph =
-            gpuExec.buildLaunchGraph(TaskGraphID::RenderInit);
+        MWCudaLaunchGraph init_graph = gpuExec.buildLaunchGraph(TaskGraphID::Init);
+        MWCudaLaunchGraph render_init_graph = gpuExec.buildLaunchGraph(TaskGraphID::RenderInit);
 
         gpuExec.run(init_graph);
 
@@ -383,8 +401,6 @@ static RTAssets loadRenderObjects(
     Optional<render::RenderManager> &render_mgr,
     bool use_rt)
 {
-    StackAlloc tmp_alloc;
-
     std::array<std::string, 1> render_asset_paths;
     const char *py_root_env = getenv("MADRONA_ROOT_PATH");
     std::filesystem::path data_dir = py_root_env ? (std::string(py_root_env) + "/data") : DATA_DIR;
@@ -418,16 +434,15 @@ static RTAssets loadRenderObjects(
         },
         .objects { 0 },
         .materials { 0 },
+        .materialTextures { 0 },
         .instances { 0 },
         .textures { 0 },
     };
 
-    HeapArray<SourceMesh> meshes(
-        model.meshGeo.numMeshes + (size_t)RenderPrimObjectIDs::NumPrims);
+    HeapArray<SourceMesh> meshes(model.meshGeo.numMeshes + (size_t)RenderPrimObjectIDs::NumPrims);
     const CountT num_meshes = (CountT)model.meshGeo.numMeshes;
 
-    meshes[(size_t)RenderPrimObjectIDs::DebugCam] = 
-        disk_render_assets->objects[(size_t)RenderPrimObjectIDs::DebugCam].meshes[0];
+    meshes[(size_t)RenderPrimObjectIDs::DebugCam] = disk_render_assets->objects[(size_t)RenderPrimObjectIDs::DebugCam].meshes[0];
     meshes[(size_t)RenderPrimObjectIDs::Plane] = CreatePlane(generated_assets);
     meshes[(size_t)RenderPrimObjectIDs::Sphere] = CreateSphere(generated_assets);
     meshes[(size_t)RenderPrimObjectIDs::Box] = CreateBox(generated_assets);
@@ -472,62 +487,68 @@ static RTAssets loadRenderObjects(
         };
     }
 
-    SourceTexture *out_textures = tmp_alloc.allocN<SourceTexture>(model.numTextures);
+    // Use HeapArray with default allocator - automatically cleaned up when it goes out of scope
+    HeapArray<SourceTexture> textures(model.numTextures);
 
     for (CountT i = 0; i < model.numTextures; i++) {
+        // TODO: NChans is not used.
         uint64_t tex_offset = model.texOffsets[i];
-        Optional<SourceTexture> tex = SourceTexture {
-            .data = &model.texData[tex_offset],
+        textures[i] = SourceTexture {
+            .data = model.texData + tex_offset,
             .format = SourceTextureFormat::R8G8B8A8,
             .width = (uint32_t)model.texWidths[i],
             .height = (uint32_t)model.texHeights[i],
             .numBytes = (size_t)(model.texWidths[i] * model.texHeights[i] * 4),
         };
-        out_textures[i] = *tex;
     }
 
-    Span<imp::SourceTexture> imported_textures = Span(out_textures, model.numTextures);
-
-    std::vector<imp::SourceMaterial> materials;
+    // Use HeapArray with default allocator - automatically cleaned up when it goes out of scope
+    // This avoids dynamic reallocation and provides better performance
+    HeapArray<imp::SourceMaterial> materials(model.numMats);
     for (CountT i = 0; i < model.numMats; i++) {
-        int32_t tex_idx = model.matTexIDs[i * 10];
-        SourceMaterial mat = {
-            .color = math::Vector4{
-                model.matRGBA[i].x, model.matRGBA[i].y,
-                model.matRGBA[i].z, model.matRGBA[i].w},
-            .textureIdx = tex_idx,
+        const math::Vector4 &rgba = model.matRGBA[i];
+        uint32_t mat_tex_offset = model.matTexOffsets[i];
+        uint32_t next_tex_offset = i < model.numMats - 1 ?
+            model.matTexOffsets[i + 1] : model.numMatTextures;
+        uint32_t mat_tex_num = next_tex_offset - mat_tex_offset;
+
+        materials[i] = SourceMaterial {
+            .color = math::Vector4{rgba.x, rgba.y, rgba.z, rgba.w},
+            .textureIdx = model.matTexIDs + mat_tex_offset,
+            .numTextures = mat_tex_num,
             .roughness = 0.0f,
-            .metalness = 0.0f};
-        materials.push_back(mat);
+            .metalness = 0.0f
+        };
     }
 
     // Create materials for geoms that do not have one assigned
-    for (CountT i = 0; i < model.numGeoms; i++) {
-        if (model.geomMatIDs[i] == -1) {
-            SourceMaterial mat = {
-                .color = math::Vector4{
-                    model.geomRGBA[i].x, model.geomRGBA[i].y,
-                    model.geomRGBA[i].z, model.geomRGBA[i].w},
-                .textureIdx = -1,
-                .roughness = 0.8f,
-                .metalness = 0.2f,
-            };
-            materials.push_back(mat);
-            model.geomMatIDs[i] = materials.size() - 1;
+    // for (CountT i = 0; i < model.numGeoms; i++) {
+    //     if (model.geomMatIDs[i] == -1) {
+    //         const math::Vector4 &rgba_i = model.geomRGBA[i];
+    //         SourceMaterial mat = {
+    //             .color = math::Vector4{rgba_i.x, rgba_i.y, rgba_i.z, rgba_i.w},
+    //             .textureIdx = nullptr,
+    //             .numTextures = 0,
+    //             .roughness = 0.8f,
+    //             .metalness = 0.2f,
+    //         };
+    //         materials.push_back(mat);
+    //         model.geomMatIDs[i] = materials.size() - 1;
 
-            for (CountT j = i + 1; j < model.numGeoms; j++) {
-                // FIX: Should probably implement == op for Vector4
-                if (model.geomMatIDs[j] == -1 && 
-                    model.geomRGBA[i].x == model.geomRGBA[j].x &&
-                    model.geomRGBA[i].y == model.geomRGBA[j].y &&
-                    model.geomRGBA[i].z == model.geomRGBA[j].z &&
-                    model.geomRGBA[i].w == model.geomRGBA[j].w) 
-                {
-                    model.geomMatIDs[j] = materials.size() - 1;
-                }
-            }
-        }
-    }
+    //         for (CountT j = i + 1; j < model.numGeoms; j++) {
+    //             // FIX: Should probably implement == op for Vector4
+    //             const math::Vector4 &rgba_j = model.geomRGBA[j];
+    //             if (model.geomMatIDs[j] == -1 && 
+    //                 rgba_i.x == rgba_j.x &&
+    //                 rgba_i.y == rgba_j.y &&
+    //                 rgba_i.z == rgba_j.z &&
+    //                 rgba_i.w == rgba_j.w
+    //             ) {
+    //                 model.geomMatIDs[j] = materials.size() - 1;
+    //             }
+    //         }
+    //     }
+    // }
 
     HeapArray<SourceObject> objs(model.numGeoms + 1);
 
@@ -581,6 +602,7 @@ static RTAssets loadRenderObjects(
                 .numFaces = source_mesh.numFaces,
                 .materialIDX = static_cast<uint32_t>(model.geomMatIDs[i]),
             };
+            assert(model.geomMatIDs[i] >= 0);
         }
 
         objs[i] = {
@@ -604,16 +626,19 @@ static RTAssets loadRenderObjects(
     }
 
     if (render_mgr.has_value()) {
-        render_mgr->loadObjects(objs, materials, imported_textures);
+        // HeapArray automatically converts to Span via template constructor
+        render_mgr->loadObjects(objs, materials, textures);
     }
 
     if (use_rt) {
         auto ret = RTAssets {
             render::AssetProcessor::makeBVHData(objs),
-            render::AssetProcessor::initMaterialData(materials.data(),
-                                     materials.size(),
-                                     imported_textures.data(),
-                                     imported_textures.size())
+            render::AssetProcessor::initMaterialData(
+                materials.data(),
+                materials.size(),
+                textures.data(),
+                textures.size()
+            )
         };
 
         return ret;
@@ -643,48 +668,33 @@ Manager::Impl * Manager::Impl::make(
     sim_cfg.useRT = use_rt;
 
     CUcontext cu_ctx = MWCudaExecutor::initCUDA(mgr_cfg.gpuID);
-
-    Optional<RenderGPUState> render_gpu_state =
-        initRenderGPUState(mgr_cfg, viz_gpu_hdls);
-
+    Optional<RenderGPUState> render_gpu_state = initRenderGPUState(mgr_cfg, viz_gpu_hdls);
     Optional<render::RenderManager> render_mgr =
-        initRenderManager(mgr_cfg, gs_model,
-                          viz_gpu_hdls, render_gpu_state);
+        initRenderManager(mgr_cfg, gs_model, viz_gpu_hdls, render_gpu_state);
 
-    RTAssets rt_assets = loadRenderObjects(
-            gs_model, render_mgr, use_rt);
+    RTAssets rt_assets = loadRenderObjects(gs_model, render_mgr, use_rt);
     if (render_mgr.has_value()) {
         sim_cfg.renderBridge = render_mgr->bridge();
     } else {
         sim_cfg.renderBridge = nullptr;
     }
 
-    int32_t *geom_types_gpu = (int32_t *)cu::allocGPU(
-        sizeof(int32_t) * gs_model.numGeoms);
-    int32_t *geom_data_ids_gpu = (int32_t *)cu::allocGPU(
-        sizeof(int32_t) * gs_model.numGeoms);
-    Vector3 *geom_sizes_gpu = (Vector3 *)cu::allocGPU(
-        sizeof(Vector3) * gs_model.numGeoms);
+    int32_t *geom_types_gpu = (int32_t *)cu::allocGPU(sizeof(int32_t) * gs_model.numGeoms);
+    int32_t *geom_data_ids_gpu = (int32_t *)cu::allocGPU(sizeof(int32_t) * gs_model.numGeoms);
+    Vector3 *geom_sizes_gpu = (Vector3 *)cu::allocGPU(sizeof(Vector3) * gs_model.numGeoms);
     float *cam_fovy = (float *)cu::allocGPU(sizeof(float) * gs_model.numCams);
     int32_t *cam_proj_type =
         (int32_t *)cu::allocGPU(sizeof(int32_t) * gs_model.numCams);
     float *cam_zfar = (float *)cu::allocGPU(sizeof(float) * gs_model.numCams);
     float *cam_znear = (float *)cu::allocGPU(sizeof(float) * gs_model.numCams);
 
-    REQ_CUDA(cudaMemcpy(geom_types_gpu, gs_model.geomTypes,
-        sizeof(int32_t) * gs_model.numGeoms, cudaMemcpyHostToDevice));
-    REQ_CUDA(cudaMemcpy(geom_data_ids_gpu, gs_model.geomDataIDs,
-        sizeof(int32_t) * gs_model.numGeoms, cudaMemcpyHostToDevice));
-    REQ_CUDA(cudaMemcpy(geom_sizes_gpu, gs_model.geomSizes,
-        sizeof(Vector3) * gs_model.numGeoms, cudaMemcpyHostToDevice));
-    REQ_CUDA(cudaMemcpy(cam_fovy, gs_model.camFovy,
-        sizeof(float) * gs_model.numCams, cudaMemcpyHostToDevice));
-    REQ_CUDA(cudaMemcpy(cam_proj_type, gs_model.camProjType,
-        sizeof(int32_t) * gs_model.numCams, cudaMemcpyHostToDevice));
-    REQ_CUDA(cudaMemcpy(cam_znear, gs_model.camZNear,
-        sizeof(float) * gs_model.numCams, cudaMemcpyHostToDevice));
-    REQ_CUDA(cudaMemcpy(cam_zfar, gs_model.camZFar,
-        sizeof(float) * gs_model.numCams, cudaMemcpyHostToDevice));
+    REQ_CUDA(cudaMemcpy(geom_types_gpu, gs_model.geomTypes, sizeof(int32_t) * gs_model.numGeoms, cudaMemcpyHostToDevice));
+    REQ_CUDA(cudaMemcpy(geom_data_ids_gpu, gs_model.geomDataIDs, sizeof(int32_t) * gs_model.numGeoms, cudaMemcpyHostToDevice));
+    REQ_CUDA(cudaMemcpy(geom_sizes_gpu, gs_model.geomSizes, sizeof(Vector3) * gs_model.numGeoms, cudaMemcpyHostToDevice));
+    REQ_CUDA(cudaMemcpy(cam_proj_type, gs_model.camProjType, sizeof(int32_t) * gs_model.numCams, cudaMemcpyHostToDevice));
+    REQ_CUDA(cudaMemcpy(cam_fovy, gs_model.camFovy, sizeof(float) * gs_model.numCams, cudaMemcpyHostToDevice));
+    REQ_CUDA(cudaMemcpy(cam_znear, gs_model.camZNear, sizeof(float) * gs_model.numCams, cudaMemcpyHostToDevice));
+    REQ_CUDA(cudaMemcpy(cam_zfar, gs_model.camZFar, sizeof(float) * gs_model.numCams, cudaMemcpyHostToDevice));
 
     sim_cfg.geomTypes = geom_types_gpu;
     sim_cfg.geomDataIDs = geom_data_ids_gpu;
@@ -695,9 +705,7 @@ Manager::Impl * Manager::Impl::make(
     sim_cfg.camProjType = cam_proj_type;
 
     HeapArray<Sim::WorldInit> world_inits(mgr_cfg.numWorlds);
-
-    Optional<CudaBatchRenderConfig> render_cfg = 
-        Optional<CudaBatchRenderConfig>::none();
+    Optional<CudaBatchRenderConfig> render_cfg = Optional<CudaBatchRenderConfig>::none();
     if (use_rt) {
         render_cfg = {
             .renderMode = CudaBatchRenderConfig::RenderMode::RGBD,
@@ -708,9 +716,7 @@ Manager::Impl * Manager::Impl::make(
         };
     }
 
-    std::vector<std::string> hideseek_srcs = {
-            GPU_HIDESEEK_SRC_LIST
-        };
+    std::vector<std::string> hideseek_srcs = { GPU_HIDESEEK_SRC_LIST };
     const char *py_root_env = getenv("MADRONA_ROOT_PATH");
     std::filesystem::path root_dir = py_root_env ? py_root_env : std::filesystem::current_path();
     std::for_each(
@@ -740,8 +746,7 @@ Manager::Impl * Manager::Impl::make(
         CompileConfig::OptMode::LTO,
     }, cu_ctx, render_cfg);
 
-    Optional<MWCudaLaunchGraph> raytrace_graph =
-        Optional<MWCudaLaunchGraph>::none();
+    Optional<MWCudaLaunchGraph> raytrace_graph = Optional<MWCudaLaunchGraph>::none();
 
     if (use_rt) {
         raytrace_graph = gpu_exec.buildRenderGraph();

@@ -61,7 +61,6 @@ Vertex unpackVertex(PackedVertex packed)
     vert.normal = normal;
     vert.tangentAndSign = tangent_and_sign;
     vert.uv = unpackHalf2x16(asuint(d1.z));
-    vert.materialIdx = asuint(d1.w);
 
     return vert;
 }
@@ -80,7 +79,6 @@ EngineInstanceData unpackEngineInstanceData(PackedInstanceData packed)
     o.matID = asint(d2.z);
     o.objectID = asint(d2.w);
     o.worldID = asint(d3.x);
-    o.color = asuint(d3.y);
 
     return o;
 }
