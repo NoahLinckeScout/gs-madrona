@@ -60,7 +60,7 @@ struct BlurPushConst {
 };
 
 struct CullPushConst {
-    uint32_t worldIDX;
+    uint32_t worldID;
     uint32_t numViews;
     uint32_t numInstances;
     uint32_t numWorlds;
@@ -84,7 +84,7 @@ struct DensityLayer {
     float linTerm;
     float constTerm;
 
-    float pad[3];
+    int32_t pad[3];
 };
 
 struct DensityProfile {
@@ -110,7 +110,7 @@ struct SkyData {
     float topRadius;
     float miePhaseFunctionG;
     float muSunMin;
-    float pad[3];
+    int32_t pad[3];
 };
 
 struct DrawPushConst {
@@ -205,7 +205,7 @@ struct ShadowViewData {
     float4 cameraUp;
     float4 cameraForward;
     uint32_t lightIdx;
-    uint32_t pad[3];
+    int32_t pad[3];
 };
 
 // Only used in shaders
@@ -226,42 +226,16 @@ struct PackedLightData {
 };
 
 struct PerspectiveCameraData {
-    float3 pos;
-    float4 rot;
-    float xScale;
-    float yScale;
-    float zNear;
-    float zFar;
-    int32_t worldID;
-    float fisheyeThetaMax;
-    uint32_t projectionType;
-    float aspectRatio;
-    float padding1;
-};
-
-// Make sure that this becomes packed in the future.
-struct PerspectiveCameraDataBR {
-    float4 position;
-    float4 rotation;
-    float xScale;
-    float yScale;
-    float zNear;
-    int viewIDX;
-    int worldIDX;
-    float fisheyeThetaMax;
-    uint32_t projectionType;
-    float aspectRatio;
-    int pad;
-};
-
-// Instance data that is needed to render an object
-struct InstanceDataBR {
-    float3 position;
-    float4 rotation;
-    float3 scale;
-    int32_t matID;
-    int32_t objectID;
-    int32_t worldID;
+    float3 pos;     // [0, 12)
+    float4 rot;     // [12, 28)
+    float xScale;   // [28, 32)
+    float yScale;   // [32, 36)
+    float zNear;    // [36, 40)
+    float zFar;     // [40, 44)
+    int32_t worldID;           // [44, 48)
+    float fisheyeThetaMax;     // [48, 52)
+    uint32_t projectionType;   // [52, 56)
+    int32_t pad[2];            // [56, 64)
 };
 
 struct DrawDataBR {

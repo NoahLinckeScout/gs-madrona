@@ -48,11 +48,10 @@ struct alignas(16) PerspectiveCameraData {
     float yScale;
     float zNear;
     float zFar;
-    int32_t worldIDX;
+    int32_t worldID;
     float fisheyeThetaMax;
-    int32_t projectionType;
-    float aspectRatio;
-    float padding1;
+    uint32_t projectionType;
+    int32_t pad[2];
 };
 
 // For private usage - not to be used by user.
@@ -61,16 +60,13 @@ struct alignas(16) InstanceData {
     math::Quat rotation;
     math::Diag3x3 scale;
 
-    // If this is -1, we just use whatever default material the model
-    // has defined for it.
-    //
+    // If this is -1, we just use whatever default material the model has defined for it.
     // If this is -2, we use the color at the end of this struct.
     int32_t matID;
-
     int32_t objectID;
-    int32_t worldIDX;
-
+    int32_t worldID;
     uint32_t color;
+    int32_t pad[2];
 };
 
 // This is all the data required to configure a light. The actual
@@ -226,34 +222,22 @@ namespace RenderingSystem {
         Span<const TaskGraphNodeID> deps,
         bool update_visual_properties = false);
 
-    void init(Context &ctx,
-              const RenderECSBridge *bridge);
-
+    void init(Context &ctx, const RenderECSBridge *bridge);
     uint32_t * getVoxelPtr(Context &ctx);
-
-    void makeEntityRenderable(Context &ctx,
-                              Entity e);
-    
-    void disableEntityRenderable(Context &ctx,
-                                 Entity e);
-
+    void makeEntityRenderable(Context &ctx, Entity e);
+    void disableEntityRenderable(Context &ctx, Entity e);
     void attachEntityToView(Context &ctx,
                             Entity e,
                             float vfov_degrees,
                             float z_near,
                             float z_far,
                             const math::Vector3 &camera_offset,
-                            RenderCamera::Projection projection = RenderCamera::Projection::Perspective);
+                            RenderCamera::Projection projection);
 
     // Need to call these before destroying entities
-    void cleanupViewingEntity(Context &ctx,
-                              Entity e);
-    void cleanupRenderableEntity(Context &ctx,
-                                 Entity e);
-
-
-    void makeEntityLightCarrier(Context &ctx,
-                                Entity e);
+    void cleanupViewingEntity(Context &ctx,Entity e);
+    void cleanupRenderableEntity(Context &ctx, Entity e);
+    void makeEntityLightCarrier(Context &ctx, Entity e);
 };
 
 }

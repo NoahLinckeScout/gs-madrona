@@ -126,12 +126,10 @@ void Sim::setupTasks(TaskGraphManager &taskgraph_mgr, const Config &cfg)
     TaskGraphBuilder &init_builder = taskgraph_mgr.init(TaskGraphID::Init);
     setupInitTasks(init_builder, cfg);
 
-    TaskGraphBuilder &render_init_builder =
-        taskgraph_mgr.init(TaskGraphID::RenderInit);
+    TaskGraphBuilder &render_init_builder = taskgraph_mgr.init(TaskGraphID::RenderInit);
     setupRenderTasks(render_init_builder, {}, true);
 
-    TaskGraphBuilder &render_tasks_builder =
-        taskgraph_mgr.init(TaskGraphID::Render);
+    TaskGraphBuilder &render_tasks_builder = taskgraph_mgr.init(TaskGraphID::Render);
     setupRenderTasks(render_tasks_builder, {}, false);
 }
 
@@ -183,13 +181,13 @@ Sim::Sim(Engine &ctx,
         float z_near = cfg.camZNear[cam_idx];
         float z_far = cfg.camZFar[cam_idx];
         render::RenderingSystem::attachEntityToView(
-            ctx,
-            cam,
-            vfov_degrees,
-            z_near,
-            z_far,
+            ctx, cam,
+            cfg.camFovy[cam_idx],
+            cfg.camZNear[cam_idx],
+            cfg.camZFar[cam_idx],
             Vector3::zero(),
-            projection);
+            static_cast<render::RenderCamera::Projection>(cfg.camProjType[cam_idx])
+        );
     }
     
     for (CountT light_idx = 0; light_idx < (CountT)cfg.numLights; light_idx++) {

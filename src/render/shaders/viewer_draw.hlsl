@@ -126,10 +126,7 @@ float4 vert(in uint vid : SV_VertexID,
                        1.0);
 #endif
 
-        clip_pos = projectToClip(
-            view_data,
-            view_pos,
-            view_data.zNear);
+        clip_pos = projectToClip(view_data, view_pos, view_data.zNear);
     }
 
     v2f.normal = normalize(rotateVec(instance_data.rotation, (vert.normal / instance_data.scale)));

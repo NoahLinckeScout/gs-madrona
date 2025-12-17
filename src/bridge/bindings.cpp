@@ -50,6 +50,7 @@ NB_MODULE(_gs_madrona_batch_renderer, m) {
             nb::ndarray<const float, nb::shape<-1>, nb::device::cpu> cam_fovy,
             nb::ndarray<const float, nb::shape<-1>, nb::device::cpu> cam_znear,
             nb::ndarray<const float, nb::shape<-1>, nb::device::cpu> cam_zfar,
+            nb::ndarray<const uint32_t, nb::shape<-1>, nb::device::cpu> cam_proj_type,
             nb::ndarray<const int32_t, nb::shape<-1>, nb::device::cpu> enabled_geom_groups,
             bool add_cam_debug_geo,
             bool use_rt,
@@ -100,7 +101,7 @@ NB_MODULE(_gs_madrona_batch_renderer, m) {
                 .camFovy = (float *)cam_fovy.data(),
                 .camZNear = (float *)cam_znear.data(),
                 .camZFar = (float *)cam_zfar.data(),
-                .camProjType = (int32_t *)cam_proj_type.data(),
+                .camProjType = (uint32_t *)cam_proj_type.data(),
             };
 
             new (self) Manager(
@@ -146,6 +147,7 @@ NB_MODULE(_gs_madrona_batch_renderer, m) {
            nb::arg("cam_fovy"),
            nb::arg("cam_znear"),
            nb::arg("cam_zfar"),
+           nb::arg("cam_proj_type"),
            nb::arg("enabled_geom_groups"),
            nb::arg("add_cam_debug_geo") = false,
            nb::arg("use_rt") = false,
