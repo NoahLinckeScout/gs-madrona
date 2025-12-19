@@ -39,18 +39,14 @@ public:
     Backend(Backend &&);
     ~Backend();
 
-    Device * makeDevice(
-        CountT gpu_idx, Span<const VkSurfaceKHR> present_surfaces = {});
-
-    Device * makeDevice(
-        const DeviceID &gpu_id, Span<const VkSurfaceKHR> present_surfaces = {});
+    Device * makeDevice(CountT gpu_idx, Span<const VkSurfaceKHR> present_surfaces = {});
+    Device * makeDevice(const DeviceID &gpu_id, Span<const VkSurfaceKHR> present_surfaces = {});
 
     VkInstance hdl;
     InstanceDispatch dt;
 
 private:
-    Device * makeDevice(
-        VkPhysicalDevice phy, Span<const VkSurfaceKHR> present_surfaces);
+    Device * makeDevice(VkPhysicalDevice phy, Span<const VkSurfaceKHR> present_surfaces);
 
     struct Init;
     inline Backend(Init init, bool enable_present);

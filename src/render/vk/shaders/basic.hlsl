@@ -62,9 +62,7 @@ Vertex unpackVertex(uint64_t vertex_buffer, uint32_t idx)
     float4 a = vk::RawBufferLoad<float4>(data0_addr, 16);
     float4 b = vk::RawBufferLoad<float4>(data0_addr + 16, 16);
 
-    uint3 packed_normal_tangent = uint3(
-        asuint(a.w), asuint(b.x), asuint(b.y));
-
+    uint3 packed_normal_tangent = uint3(asuint(a.w), asuint(b.x), asuint(b.y));
     float3 normal;
     float4 tangent_and_sign;
     decodeNormalTangent(packed_normal_tangent, normal, tangent_and_sign);

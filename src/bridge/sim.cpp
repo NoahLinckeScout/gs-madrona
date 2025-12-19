@@ -175,11 +175,6 @@ Sim::Sim(Engine &ctx,
         }
         ctx.get<Position>(cam) = Vector3::zero();
         ctx.get<Rotation>(cam) = Quat { 1, 0, 0, 0 };
-        auto projection =
-            (render::RenderCamera::Projection)cfg.camProjType[cam_idx];
-        float vfov_degrees = cfg.camFovy[cam_idx];
-        float z_near = cfg.camZNear[cam_idx];
-        float z_far = cfg.camZFar[cam_idx];
         render::RenderingSystem::attachEntityToView(
             ctx, cam,
             cfg.camFovy[cam_idx],

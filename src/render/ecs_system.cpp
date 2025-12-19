@@ -317,27 +317,10 @@ inline void viewTransformUpdate(Context &ctx,
     PerspectiveCameraData &cam_data = system_state.viewsCPU[view_id];
 #endif
 
-    float x_scale;
-    float y_scale;
-
-    if (cam.projection == RenderCamera::Projection::Perspective) {
-        x_scale = cam.fovScale / aspect_ratio;
-        y_scale = -cam.fovScale;
-        cam_data.fisheyeThetaMax = 0.f;
-    } else {
-        float fisheye_fov = std::min(
-            cam.fisheyeFovRadians,
-            math::pi - 1e-3f);
-        float half_fov = std::max(fisheye_fov * 0.5f, 1e-3f);
-        float perspective_scale = 1.f / tanf(half_fov);
-
-        x_scale = perspective_scale / aspect_ratio;
-        y_scale = -perspective_scale;
-        cam_data.fisheyeThetaMax = fisheye_fov * 0.5f;
-    }
-
-    cam_data.xScale = cam.fovScale / aspect_ratio;
-    cam_data.yScale = -cam.fovScale;
+    float fov_scale = 1.0f / tanf(cam_data.half_fov);
+    cam_data.halfFov = cam_data.half_fov;
+    cam_data.xScale = fov_scale / aspect_ratio;
+    cam_data.yScale = -fov_scale;
     cam_data.zNear = cam.zNear;
     cam_data.zFar = cam.zFar;
     cam_data.projectionType = static_cast<uint32_t>(cam.projection);
@@ -706,11 +689,11 @@ void attachEntityToView(Context &ctx,
                         const math::Vector3 &camera_offset,
                         RenderCamera::Projection projection)
 {
-    float fov_scale = 1.0f / tanf(toRadians(vfov_degrees * 0.5f));
+    float half_fov = toRadians(vfov_degrees * 0.5f);
     Entity camera_entity = ctx.makeEntity<RenderCameraArchetype>();
     ctx.get<RenderCamera>(e) = { 
         camera_entity,
-        fov_scale,
+        half_fov,
         z_near,
         z_far,
         camera_offset,
@@ -736,22 +719,10 @@ void attachEntityToView(Context &ctx,
     bool raycast_enabled = false;
 #endif
 
-    float x_scale;
-    float y_scale;
-    float theta_max = 0.f;
-    int32_t proj_type = 0;
-
-    if (projection == RenderCamera::Projection::Perspective) {
-        x_scale = fov_scale / aspect_ratio;
-        y_scale = -fov_scale;
-        proj_type = 0;
-    } else {
-        x_scale = 1.f;
-        y_scale = -1.f;
-        theta_max = fisheye_fov_rad * 0.5f;
-        proj_type = 1;
-    }
-
+    float x_scale = fov_scale / aspect_ratio;
+    float y_scale = -fov_scale;
+    float theta_max = fisheye_fov_rad * 0.5f;
+    uint32_t proj_type = static_cast<uint32_t>(projection);
     cam_data = PerspectiveCameraData {
         { /* Position */ }, 
         { /* Rotation */ }, 

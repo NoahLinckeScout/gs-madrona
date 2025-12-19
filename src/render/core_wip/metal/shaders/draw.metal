@@ -223,13 +223,11 @@ Vertex unpackVertex(PackedVertex packed)
     float4 a = packed.data[0];
     float4 b = packed.data[1];
 
-    uint3 packed_normal_tangent(
-        as_type<uint>(a.w), as_type<uint>(b.x), as_type<uint>(b.y));
+    uint3 packed_normal_tangent(as_type<uint>(a.w), as_type<uint>(b.x), as_type<uint>(b.y));
 
     Vertex vert;
     vert.position = float3(a.x, a.y, a.z);
-    decodeNormalTangent(packed_normal_tangent, vert.normal,
-                        vert.tangentAndSign);
+    decodeNormalTangent(packed_normal_tangent, vert.normal, vert.tangentAndSign);
     vert.uv = float2(b.z, b.w);
 
     return vert;

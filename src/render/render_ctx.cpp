@@ -2015,10 +2015,10 @@ CountT RenderContext::loadObjects(Span<const imp::SourceObject> src_objs,
                 // Encode UVs into a uint32 (how bad will this look on small images??
                 // Let's see I guess.
                 Vector3 enc_nt = encodeNormalTangent(normal, tangent_sign);
-                float enc_uvs = std::bit_cast<float>(packHalf2x16(uv));
+                // float enc_uvs = std::bit_cast<float>(packHalf2x16(uv));
                 PackedVertex *vertex_data = vertex_ptr + (vertex_offset++);
                 vertex_data->data[0] = Vector4 { pos.x, pos.y, pos.z, enc_nt.x };
-                vertex_data->data[1] = Vector4 { enc_nt.y, enc_nt.z, enc_uvs, 0 };
+                vertex_data->data[1] = Vector4 { enc_nt.y, enc_nt.z, uv.x, uv.y };
             }
 
             memcpy(indices_ptr + index_offset, mesh.indices, sizeof(uint32_t) * num_mesh_indices);

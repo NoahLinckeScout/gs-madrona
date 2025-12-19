@@ -163,7 +163,7 @@ void main(uint3 tid       : SV_DispatchThreadID,
             float3 right = cross(front,up);
 
             float zFar = 20000; //Dummy value for now
-            float aspectRatio = view_data.yScale/view_data.xScale;
+            float aspectRatio = view_data.yScale / view_data.xScale;
             float farPlaneHalfHeight = zFar; //Assumed fov of 90
             float farPlaneHalfWidth = farPlaneHalfHeight * aspectRatio;
             float3 farVec = zFar * front;

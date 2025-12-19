@@ -158,8 +158,7 @@ GPUHandle APIManager::initGPU(CountT gpu_idx)
     switch (chosen_backend_) {
     case APIBackendSelect::Vulkan: {
         auto backend = static_cast<vk::Backend *>(backend_);
-        return GPUHandle(
-            APIBackendSelect::Vulkan, backend->makeDevice(gpu_idx));
+        return GPUHandle(APIBackendSelect::Vulkan, backend->makeDevice(gpu_idx));
     } break;
     default: {
         MADRONA_UNREACHABLE();

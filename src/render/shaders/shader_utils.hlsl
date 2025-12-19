@@ -36,10 +36,8 @@ PerspectiveCameraData unpackViewData(PackedViewData packed)
     cam.zNear = d2.y;
     cam.zFar = d2.z;
     cam.worldID = asint(d2.w);
-    cam.fisheyeThetaMax = d3.x;
+    cam.halfFov = d3.x;
     cam.projectionType = asuint(d3.y);
-    cam.aspectRatio = d3.z;
-    cam.padding1 = d3.w;
 
     return cam;
 }
@@ -49,9 +47,7 @@ Vertex unpackVertex(PackedVertex packed)
     const float4 d0 = packed.data[0];
     const float4 d1 = packed.data[1];
 
-    uint3 packed_normal_tangent = uint3(
-        asuint(d0.w), asuint(d1.x), asuint(d1.y));
-
+    uint3 packed_normal_tangent = uint3(asuint(d0.w), asuint(d1.x), asuint(d1.y));
     float3 normal;
     float4 tangent_and_sign;
     decodeNormalTangent(packed_normal_tangent, normal, tangent_and_sign);
@@ -60,7 +56,7 @@ Vertex unpackVertex(PackedVertex packed)
     vert.position = float3(d0.x, d0.y, d0.z);
     vert.normal = normal;
     vert.tangentAndSign = tangent_and_sign;
-    vert.uv = unpackHalf2x16(asuint(d1.z));
+    vert.uv = float2(d1.z, d1.w);
 
     return vert;
 }

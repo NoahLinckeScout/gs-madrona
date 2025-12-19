@@ -66,8 +66,7 @@ void vert(in uint vid : SV_VertexID,
 
     float4x4 shadow_matrix = shadowViewDataBuffer[draw_data.viewID].viewProjectionMatrix;
 
-    EngineInstanceData instance_data = unpackEngineInstanceData(
-        engineInstanceBuffer[instance_id]);
+    EngineInstanceData instance_data = unpackEngineInstanceData(engineInstanceBuffer[instance_id]);
 
     float4 world_space_pos = float4(
         rotateVec(instance_data.rotation, instance_data.scale * vert.position) + instance_data.position,

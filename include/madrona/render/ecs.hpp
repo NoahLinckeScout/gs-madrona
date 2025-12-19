@@ -10,7 +10,7 @@ struct RenderCamera {
     Entity cameraEntity;
 
     // 1.0 / tanf(fovy * 0.5)
-    float fovScale;
+    float halfFov;
     float zNear;
     float zFar;
 
@@ -22,7 +22,6 @@ struct RenderCamera {
     };
 
     Projection projection;
-    float fisheyeFovRadians;
 };
 
 // This will be attached to any renderable entity
@@ -49,7 +48,7 @@ struct alignas(16) PerspectiveCameraData {
     float zNear;
     float zFar;
     int32_t worldID;
-    float fisheyeThetaMax;
+    float halfFov;
     uint32_t projectionType;
     int32_t pad[2];
 };

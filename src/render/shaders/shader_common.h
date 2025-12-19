@@ -233,7 +233,7 @@ struct PerspectiveCameraData {
     float zNear;    // [36, 40)
     float zFar;     // [40, 44)
     int32_t worldID;           // [44, 48)
-    float fisheyeThetaMax;     // [48, 52)
+    float halfFov;             // [48, 52)
     uint32_t projectionType;   // [52, 56)
     int32_t pad[2];            // [56, 64)
 };
