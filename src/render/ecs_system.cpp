@@ -317,8 +317,8 @@ inline void viewTransformUpdate(Context &ctx,
     PerspectiveCameraData &cam_data = system_state.viewsCPU[view_id];
 #endif
 
-    float fov_scale = 1.0f / tanf(cam_data.half_fov);
-    cam_data.halfFov = cam_data.half_fov;
+    float fov_scale = 1.0f / tanf(cam.halfFov);
+    cam_data.halfFov = cam.halfFov;
     cam_data.xScale = fov_scale / aspect_ratio;
     cam_data.yScale = -fov_scale;
     cam_data.zNear = cam.zNear;
@@ -699,45 +699,37 @@ void attachEntityToView(Context &ctx,
         camera_offset,
         projection,
     };
-
+    
     PerspectiveCameraData &cam_data = ctx.get<PerspectiveCameraData>(camera_entity);
-
     auto &state = ctx.singleton<RenderingSystemState>();
-
     float aspect_ratio = state.aspectRatio;
+    bool raycast_enabled = false;
+
 #ifdef MADRONA_GPU_MODE
     auto raycast_output_width = mwGPU::GPUImplConsts::get().raycastOutputWidth;
     auto raycast_output_height = mwGPU::GPUImplConsts::get().raycastOutputHeight;
-
-    bool raycast_enabled = 
-        raycast_output_width != 0 && 
-        raycast_output_height != 0;
+    raycast_enabled = raycast_output_width != 0 && raycast_output_height != 0;
     if (raycast_enabled) {  
         aspect_ratio = (float)raycast_output_width / (float)raycast_output_height;
     }
-#else
-    bool raycast_enabled = false;
 #endif
 
-    float x_scale = fov_scale / aspect_ratio;
-    float y_scale = -fov_scale;
-    float theta_max = fisheye_fov_rad * 0.5f;
-    uint32_t proj_type = static_cast<uint32_t>(projection);
+    float fov_scale = 1.0f / tanf(half_fov);
     cam_data = PerspectiveCameraData {
         { /* Position */ }, 
         { /* Rotation */ }, 
-        x_scale, y_scale, 
+        fov_scale / aspect_ratio,     // xScale
+        -fov_scale,                   // yScale
         z_near, 
         z_far,
         ctx.worldID().idx,
-        theta_max,
-        proj_type,
-        0.f
+        half_fov,
+        static_cast<uint32_t>(projection),  // projectionType
+        { /* Pad */ }
     };
 
     if (raycast_enabled) {
         Entity render_output_entity = ctx.makeEntity<RaycastOutputArchetype>();
-
         RenderOutputRef &ref = ctx.get<RenderOutputRef>(camera_entity);
         ref.outputEntity = render_output_entity;
     }
