@@ -265,7 +265,7 @@ static bool checkValidationAvailable(const InitializationDispatch &dt)
     if (have_validation_layer && have_debug_ext) {
         return true;
     } else {
-        fprintf(stderr, "Validation layers unavailable\n");
+        MADRONA_ERROR("Validation layers unavailable\n");
         return false;
     }
 }
@@ -289,7 +289,7 @@ static bool checkVulkanLayerSupport(const InitializationDispatch &dt, const std:
             return false;
         }
     }
-    std::cout << "All Vulkan layers supported" << std::endl;
+    MADRONA_DEBUG_LOG("All Vulkan layers supported\n");
     return true;
 }
 
@@ -398,7 +398,7 @@ validationDebug(VkDebugUtilsMessageSeverityFlagBitsEXT,
                 const VkDebugUtilsMessengerCallbackDataEXT *data,
                 void *)
 {
-    fprintf(stderr, "%s\n", data->pMessage);
+    MADRONA_ERROR("%s\n", data->pMessage);
 
 #if defined(MADRONA_LINUX)
     // Check if debugger is attached by trying to read from /proc/self/status
@@ -526,8 +526,7 @@ static void fillQueueInfo(VkDeviceQueueCreateInfo &info,
     info.pQueuePriorities = priorities.data();
 }
 
-VkPhysicalDevice Backend::findPhysicalDevice(
-    const DeviceID &dev_id) const
+VkPhysicalDevice Backend::findPhysicalDevice(const DeviceID &dev_id) const
 {
     uint32_t num_gpus;
     REQ_VK(dt.enumeratePhysicalDevices(hdl, &num_gpus, nullptr));
@@ -679,8 +678,7 @@ Device * Backend::makeDevice(
         FATAL("%ld corresponds to a prohibited device\n", gpu_idx);
     }
 
-    memcpy(vk_id.data(), &props.uuid,
-           sizeof(DeviceID::value_type) * vk_id.size());
+    memcpy(vk_id.data(), &props.uuid, sizeof(DeviceID::value_type) * vk_id.size());
 
     return makeDevice(vk_id, present_surfaces);
 #else
@@ -729,11 +727,9 @@ Device * Backend::makeDevice(
     };
 
     uint32_t num_supported_extensions;
-    REQ_VK(dt.enumerateDeviceExtensionProperties(phy, nullptr,
-        &num_supported_extensions, nullptr));
+    REQ_VK(dt.enumerateDeviceExtensionProperties(phy, nullptr, &num_supported_extensions, nullptr));
 
-    HeapArray<VkExtensionProperties> supported_extensions(
-        num_supported_extensions);
+    HeapArray<VkExtensionProperties> supported_extensions(num_supported_extensions);
     REQ_VK(dt.enumerateDeviceExtensionProperties(phy, nullptr,
         &num_supported_extensions, supported_extensions.data()));
 
@@ -742,11 +738,9 @@ Device * Backend::makeDevice(
         bool accel_struct_ext_available = false;
         bool ray_query_ext_available = false;
         for (const VkExtensionProperties &ext : supported_extensions) {
-            if (!strcmp(ext.extensionName,
-                    VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)) {
+            if (!strcmp(ext.extensionName, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)) {
                 accel_struct_ext_available = true;
-            } else if (!strcmp(ext.extensionName,
-                    VK_KHR_RAY_QUERY_EXTENSION_NAME)) {
+            } else if (!strcmp(ext.extensionName, VK_KHR_RAY_QUERY_EXTENSION_NAME)) {
                 ray_query_ext_available = true;
             }
         }
@@ -791,8 +785,7 @@ Device * Backend::makeDevice(
     dt.getPhysicalDeviceFeatures2(phy, &feats);
 
     uint32_t num_queue_families;
-    dt.getPhysicalDeviceQueueFamilyProperties2(phy, &num_queue_families,
-                                               nullptr);
+    dt.getPhysicalDeviceQueueFamilyProperties2(phy, &num_queue_families, nullptr);
 
     if (num_queue_families == 0) {
         FATAL("GPU doesn't have any queue families");
@@ -804,60 +797,48 @@ Device * Backend::makeDevice(
         qf.pNext = nullptr;
     }
 
-    dt.getPhysicalDeviceQueueFamilyProperties2(phy, &num_queue_families,
-                                               queue_family_props.data());
+    dt.getPhysicalDeviceQueueFamilyProperties2(phy, &num_queue_families, queue_family_props.data());
 
     QueueFamilyChoices qf_choices = chooseQueueFamilies(
         queue_family_props.data(), num_queue_families,
         phy, dt.getPhysicalDeviceSurfaceSupportKHR, present_surfaces);
 
-    const uint32_t num_gfx_queues =
-        min(desired_gfx_queues, qf_choices.numGFXQueues);
-    const uint32_t num_compute_queues =
-        min(desired_compute_queues, qf_choices.numComputeQueues);
-    const uint32_t num_transfer_queues =
-        min(desired_transfer_queues, qf_choices.numTransferQueues);
+    const uint32_t num_gfx_queues = min(desired_gfx_queues, qf_choices.numGFXQueues);
+    const uint32_t num_compute_queues = min(desired_compute_queues, qf_choices.numComputeQueues);
+    const uint32_t num_transfer_queues = min(desired_transfer_queues, qf_choices.numTransferQueues);
 
     array<VkDeviceQueueCreateInfo, 3> queue_infos {};
     vector<float> gfx_pris(num_gfx_queues, VulkanConfig::gfx_priority);
-    vector<float> compute_pris(num_compute_queues,
-                               VulkanConfig::compute_priority);
-    vector<float> transfer_pris(num_transfer_queues,
-                                VulkanConfig::transfer_priority);
+    vector<float> compute_pris(num_compute_queues, VulkanConfig::compute_priority);
+    vector<float> transfer_pris(num_transfer_queues, VulkanConfig::transfer_priority);
 
     uint32_t num_qf_allocated = 0;
-    fillQueueInfo(queue_infos[num_qf_allocated++],
-                  qf_choices.gfxQF, gfx_pris);
+    fillQueueInfo(queue_infos[num_qf_allocated++], qf_choices.gfxQF, gfx_pris);
 
     if (qf_choices.numComputeQueues > 0) {
-        fillQueueInfo(queue_infos[num_qf_allocated++],
-                      qf_choices.computeQF, compute_pris);
+        fillQueueInfo(queue_infos[num_qf_allocated++], qf_choices.computeQF, compute_pris);
     }
 
     if (qf_choices.numTransferQueues > 0) {
-        fillQueueInfo(queue_infos[num_qf_allocated++],
-                      qf_choices.transferQF, transfer_pris);
+        fillQueueInfo(queue_infos[num_qf_allocated++], qf_choices.transferQF, transfer_pris);
     }
 
     VkDeviceCreateInfo dev_create_info {};
     dev_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     dev_create_info.queueCreateInfoCount = num_qf_allocated;
     dev_create_info.pQueueCreateInfos = queue_infos.data();
-    dev_create_info.enabledExtensionCount =
-        static_cast<uint32_t>(extensions.size());
+    dev_create_info.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     dev_create_info.ppEnabledExtensionNames = extensions.data();
 
     dev_create_info.pEnabledFeatures = nullptr;
 
     VkPhysicalDeviceAccelerationStructureFeaturesKHR accel_features {};
-    accel_features.sType =
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+    accel_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
     accel_features.pNext = nullptr;
     accel_features.accelerationStructure = true;
 
     VkPhysicalDeviceRayQueryFeaturesKHR rq_features {};
-    rq_features.sType =
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+    rq_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
     rq_features.pNext = &accel_features;
     rq_features.rayQuery = true;
 

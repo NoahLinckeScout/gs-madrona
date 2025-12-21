@@ -3,6 +3,7 @@
 #include <tinyusdz.hh>
 
 #include "usd.hpp"
+#include <madrona/macros.hpp>
 
 #include <string>
 
@@ -44,18 +45,21 @@ bool USDLoader::load(const char *path,
     });
 
     if (warn.size()) {
-        printf("USD Loader Warning: %s\n", warn.c_str());
+        MADRONA_WARN("USD Loader Warning [%s]: %s\n", path, warn.c_str());
     }
 
     if (!ret) {
+        // Errors are fatal - write to errBuf for caller, and always show to user
         if (!err.empty()) {
-            printf("USD Loader Error: %s\n", err.c_str());
+            MADRONA_ERROR("USD Loader Error [%s]: %s\n", path, err.c_str());
+        } else {
+            MADRONA_ERROR("USD Loader Error [%s]: Failed to load file\n", path);
         }
 
         return false;
     }
 
-    printf("USD File: %s\n", stage.ExportToString().c_str());
+    MADRONA_DEBUG_LOG("USD File [%s]: %s\n", path, stage.ExportToString().c_str());
 
     return false;
 }

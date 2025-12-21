@@ -687,7 +687,7 @@ static GPUCompileResults compileCode(
 
         CUmodule mod;
         REQ_CU(CudaDynamicLoader::cuModuleLoadData(&mod, kernel_cache.cubinStart));
-        printf("Loaded megakernel cache from %s\n", cache_path.c_str());
+        MADRONA_DEBUG_LOG("Loaded megakernel cache from %s\n", cache_path.c_str());
 
         return {
             .mod = mod,
@@ -908,11 +908,11 @@ static __attribute__((always_inline)) inline void dispatch(
     // unlike old driver API
     DynArray<HeapArray<char>> source_bytecodes(num_sources);
     if (verbose_compile) {
-        printf("Compiling GPU engine code:\n");
+        MADRONA_DEBUG_LOG("Compiling GPU engine code:\n");
     }
     for (int64_t i = 0; i < num_sources; i++) {
         if (verbose_compile) {
-            printf("%s\n", src_paths[i].c_str());
+            MADRONA_DEBUG_LOG("%s\n", src_paths[i].c_str());
         }
         auto [ptx, bytecode] = cu::jitCompileCPPFile(src_paths[i].c_str(),
             compile_flags, num_compile_flags,
@@ -1042,7 +1042,7 @@ static __attribute__((always_inline)) inline void dispatch(
     }
 
     if (verbose_compile) {
-        printf("CUDA linking info:\n");
+        MADRONA_DEBUG_LOG("CUDA linking info:\n");
         printLinkerLogs(stdout);
     }
 
@@ -1124,7 +1124,7 @@ static BVHKernels buildBVHKernels(const CompileConfig &cfg,
         REQ_CU(CudaDynamicLoader::cuModuleLoadData(&mod, bvh_cache.cubinStart));
         if (verbose_compile)
         {
-            printf("Loaded BVH kernel cache from %s\n", cache_path.c_str());
+            MADRONA_DEBUG_LOG("Loaded BVH kernel cache from %s\n", cache_path.c_str());
         }
     }
     else {
@@ -1154,7 +1154,7 @@ static BVHKernels buildBVHKernels(const CompileConfig &cfg,
         if (force_debug_env != nullptr && force_debug_env[0] == '1') {
             linker_flags.push_back("-g");
             if (verbose_compile) {
-                printf("Compiling with debug\n");
+                MADRONA_DEBUG_LOG("Compiling with debug\n");
             }
         }
 
@@ -1264,7 +1264,7 @@ static BVHKernels buildBVHKernels(const CompileConfig &cfg,
                 std::istreambuf_iterator<char>());
 
             if (verbose_compile) {
-                printf("Compiling %s\n", bvh_srcs[i].c_str());
+                MADRONA_DEBUG_LOG("Compiling %s\n", bvh_srcs[i].c_str());
             }
 
             // Gives us LTOIR
@@ -1702,7 +1702,7 @@ static void gpuVMAllocatorThread(HostChannel *channel, CUcontext cu_ctx,
                                        0, 0, 0));
 
             if (verbose_host_alloc) {
-                printf("Reserve request received %lu %lu, got %p\n",
+                MADRONA_DEBUG_LOG("Reserve request received %lu %lu, got %p\n",
                        num_reserve_bytes, num_alloc_bytes, (void *)dev_ptr);
             }
 
@@ -1716,14 +1716,14 @@ static void gpuVMAllocatorThread(HostChannel *channel, CUcontext cu_ctx,
             uint64_t num_bytes = channel->map.numBytes;
 
             if (verbose_host_alloc) {
-                printf("Grow request received %p %lu\n",
+                MADRONA_DEBUG_LOG("Grow request received %p %lu\n",
                        ptr, num_bytes);
             }
 
             mapGPUMemory(dev, (CUdeviceptr)ptr, num_bytes);
 
             if (verbose_host_alloc) {
-                printf("Grew %p\n", ptr);
+                MADRONA_DEBUG_LOG("Grew %p\n", ptr);
             }
         } else if (channel->op == HostChannel::Op::Alloc) {
             CUdeviceptr dev_ptr;
@@ -1731,7 +1731,7 @@ static void gpuVMAllocatorThread(HostChannel *channel, CUcontext cu_ctx,
             channel->alloc.result = (void *)dev_ptr;
 
             if (verbose_host_alloc) {
-                printf("Alloc request received %lu, got %p\n",
+                MADRONA_DEBUG_LOG("Alloc request received %lu, got %p\n",
                     (uint64_t)channel->alloc.numBytes, (void *)dev_ptr);
             }
         } else if (channel->op == HostChannel::Op::ReserveFree) {
@@ -1740,7 +1740,7 @@ static void gpuVMAllocatorThread(HostChannel *channel, CUcontext cu_ctx,
             uint64_t num_reserve_bytes = channel->reserveFree.numReserveBytes;
 
             if (verbose_host_alloc) {
-                printf("Unmapped %lu bytes from %p, and freed %lu reservation\n",
+                MADRONA_DEBUG_LOG("Unmapped %lu bytes from %p, and freed %lu reservation\n",
                     num_bytes, ptr, num_reserve_bytes);
             }
 
@@ -1753,7 +1753,7 @@ static void gpuVMAllocatorThread(HostChannel *channel, CUcontext cu_ctx,
             void *ptr = channel->allocFree.addr;
 
             if (verbose_host_alloc) {
-                printf("Allocation free request received for %p\n",
+                MADRONA_DEBUG_LOG("Allocation free request received for %p\n",
                     ptr);
             }
 
@@ -2196,7 +2196,7 @@ static DynArray<int32_t> processExecConfigFile(
 
         if (verbose_taskgraph)
         {
-            printf("Taskgraph node %lu: using config %d %d %d\n", node_idx,
+            MADRONA_DEBUG_LOG("Taskgraph node %lu: using config %d %d %d\n", node_idx,
                 node_cfg.numThreads, node_cfg.numBlocksPerSM, node_cfg.numSMs);
         }
 
@@ -2388,8 +2388,8 @@ MWCudaExecutor::MWCudaExecutor(
     std::string bvh_cache_path = (root_cache_dir / "bvh_cache").string();
     setenv("MADRONA_MWGPU_KERNEL_CACHE", kernel_cache_path.c_str(), 1);
     setenv("MADRONA_BVH_KERNEL_CACHE", bvh_cache_path.c_str(), 1);
-    // printf("Kernel cache directory set to: %s\n", kernel_cache_path.c_str());
-    // printf("BVH cache directory set to: %s\n", bvh_cache_path.c_str());
+    // MADRONA_DEBUG_LOG("Kernel cache directory set to: %s\n", kernel_cache_path.c_str());
+    // MADRONA_DEBUG_LOG("BVH cache directory set to: %s\n", bvh_cache_path.c_str());
 
     const ExecutorMode exec_mode = ExecutorMode::TaskGraph;
 
@@ -2471,12 +2471,10 @@ MWCudaExecutor::MWCudaExecutor(
         {}
     });
 
-    std::cout << "Initialization finished" << std::endl;
+    MADRONA_DEBUG_LOG("Initialization finished\n");
 }
 
-MWCudaExecutor::MWCudaExecutor(MWCudaExecutor &&o)
-    = default;
-
+MWCudaExecutor::MWCudaExecutor(MWCudaExecutor &&o) = default;
 MWCudaExecutor & MWCudaExecutor::operator=(MWCudaExecutor &&) = default;
 
 MWCudaExecutor::~MWCudaExecutor()
@@ -2552,7 +2550,7 @@ MWCudaExecutor::~MWCudaExecutor()
                     (float)num_times;
             }
 
-            printf("rt avg total time = %f ms\n", avg_total_time);
+            MADRONA_DEBUG_LOG("rt avg total time = %f ms\n", avg_total_time);
         }
 
         // Other times
@@ -2565,8 +2563,7 @@ MWCudaExecutor::~MWCudaExecutor()
                     (float)times.recordedTimings.size();
             }
 
-            printf("%s avg total time = %f ms\n", times.statName,
-                    avg_total_time);
+            MADRONA_DEBUG_LOG("%s avg total time = %f ms\n", times.statName, avg_total_time);
         }
     }
 }

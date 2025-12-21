@@ -9,19 +9,19 @@
 #include <madrona/mesh_bvh.hpp>
 #include <madrona/mw_gpu/host_print.hpp>
 
-#if 0
+#ifndef NDEBUG
 #define LOG_RECURSE(...) mwGPU::HostPrint::log(__VA_ARGS__)
 #else
 #define LOG_RECURSE(...)
 #endif
 
-#if 0
+#ifndef NDEBUG
 #define LOG_INST(...) mwGPU::HostPrint::log(__VA_ARGS__)
 #else
 #define LOG_INST(...)
 #endif
 
-#if 1
+#ifndef NDEBUG
 #define LOG(...) mwGPU::HostPrint::log(__VA_ARGS__)
 #else
 #define LOG(...)

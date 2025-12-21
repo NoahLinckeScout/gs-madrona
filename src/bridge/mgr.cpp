@@ -655,9 +655,9 @@ Manager::Impl * Manager::Impl::make(
     bool use_rt = mgr_cfg.useRT;
 
     if (use_rt) {
-        printf("Using raytracer\n");
+        MADRONA_DEBUG_LOG("Using raytracer\n");
     } else {
-        printf("Using rasterizer\n");
+        MADRONA_DEBUG_LOG("Using raytracer\n");
     }
 
     Sim::Config sim_cfg;
