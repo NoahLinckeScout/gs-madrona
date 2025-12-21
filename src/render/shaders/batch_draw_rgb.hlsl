@@ -94,11 +94,8 @@ void vert(in uint vid : SV_VertexID,
     float3 view_pos = rotateVec(to_view_rotation, instance_data.scale * vert.position) + to_view_translation;
     float z_far = view_data.zFar;
     float z_near = view_data.zNear;
-    float4 clip_pos = float4(
-        view_data.xScale * view_pos.x,
-        view_data.yScale * view_pos.z,
-        z_far / (z_far - z_near) * view_pos.y + (z_far * z_near) / (z_near - z_far),
-        view_pos.y);
+    float clip_z = z_far / (z_far - z_near) * view_pos.y + (z_far * z_near) / (z_near - z_far);
+    float4 clip_pos = projectToClip(view_data, view_pos, clip_z);
 
 #if 1
     uint something = min(0, instanceOffsets[0]) +

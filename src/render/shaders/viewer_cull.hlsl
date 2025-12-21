@@ -61,10 +61,10 @@ void instanceCull(uint3 tid           : SV_DispatchThreadID,
                   uint3 gid           : SV_GroupID)
 {
     if (tid_local.x == 0) {
-        sm.numInstances = getNumInstancesForWorld(pushConst.worldIDX);
+        sm.numInstances = getNumInstancesForWorld(pushConst.worldID);
         sm.numInstancesPerThread = (sm.numInstances + pushConst.numThreads-1) /
                                    pushConst.numThreads;
-        sm.instancesOffset = getInstanceOffsetsForWorld(pushConst.worldIDX);
+        sm.instancesOffset = getInstanceOffsetsForWorld(pushConst.worldID);
         // printf("%d\n", sm.numInstances);
     }
 

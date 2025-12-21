@@ -772,7 +772,7 @@ extern "C" __global__ void bvhBuildFast()
             uint32_t numLeaves;
         } world_info;
 
-        world_info.idx = bvhParams.instances[thread_offset].worldIDX;
+        world_info.idx = bvhParams.instances[thread_offset].worldID;
         world_info.numLeaves = bvhParams.instanceCounts[world_info.idx];
         world_info.numInternalNodes = world_info.numLeaves - 1;
         world_info.internalNodesOffset = bvhParams.instanceOffsets[world_info.idx];
@@ -963,7 +963,7 @@ extern "C" __global__ void bvhConstructAABBs()
             uint32_t numLeaves;
         } world_info;
 
-        world_info.idx = bvhParams.instances[thread_offset].worldIDX;
+        world_info.idx = bvhParams.instances[thread_offset].worldID;
         world_info.numLeaves = bvhParams.instanceCounts[world_info.idx];
         world_info.numInternalNodes = world_info.numLeaves - 1;
         world_info.internalNodesOffset = bvhParams.instanceOffsets[world_info.idx];
@@ -1256,7 +1256,7 @@ static __device__ inline void pushPotentialRoots(uint32_t start_search_idx,
     } world_info;
 
     auto update_world_info = [&world_info](uint32_t start_search_idx) {
-        world_info.idx = bvhParams.instances[start_search_idx].worldIDX;
+        world_info.idx = bvhParams.instances[start_search_idx].worldID;
         world_info.numLeaves = bvhParams.instanceCounts[world_info.idx];
         world_info.numInternalNodes = world_info.numLeaves - 1;
         world_info.internalNodesOffset = bvhParams.instanceOffsets[world_info.idx];

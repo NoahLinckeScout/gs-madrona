@@ -514,12 +514,10 @@ MeshBVH MeshBVHBuilder::build(
         rootMaxX = fmaxf(maxX,rootMaxX);
         rootMaxY = fmaxf(maxY,rootMaxY);
         rootMaxZ = fmaxf(maxZ,rootMaxZ);
-        //printf("%f,%f,%f | %f,%f,%f\n",minX,minY,minZ,maxX,maxY,maxZ);
 
         int8_t ex = ceilf(log2f((maxX-minX)/(powf(2, 8) - 1)));
         int8_t ey = ceilf(log2f((maxY-minY)/(powf(2, 8) - 1)));
         int8_t ez = ceilf(log2f((maxZ-minZ)/(powf(2, 8) - 1)));
-        //printf("%d,%d,%d\n",ex,ey,ez);
         node.minPoint = { minX, minY, minZ };
         node.expX = ex;
         node.expY = ey;

@@ -1860,9 +1860,17 @@ static void packView(const Device &dev,
         0.f,
     };
 
+    math::Vector4 d3 {
+        0.f,
+        0.f,
+        aspect,
+        0.f,
+    };
+
     staging->data[0] = d0;
     staging->data[1] = d1;
     staging->data[2] = d2;
+    staging->data[3] = d3;
 
     view_staging_buffer.flush(dev);
 }

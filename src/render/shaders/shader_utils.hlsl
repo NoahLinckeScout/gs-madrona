@@ -26,6 +26,7 @@ PerspectiveCameraData unpackViewData(PackedViewData packed)
     const float4 d0 = packed.data[0];
     const float4 d1 = packed.data[1];
     const float4 d2 = packed.data[2];
+    const float4 d3 = packed.data[3];
 
     PerspectiveCameraData cam;
     cam.pos = d0.xyz;
@@ -35,6 +36,8 @@ PerspectiveCameraData unpackViewData(PackedViewData packed)
     cam.zNear = d2.y;
     cam.zFar = d2.z;
     cam.worldID = asint(d2.w);
+    cam.halfFov = d3.x;
+    cam.projectionType = asuint(d3.y);
 
     return cam;
 }
@@ -44,9 +47,7 @@ Vertex unpackVertex(PackedVertex packed)
     const float4 d0 = packed.data[0];
     const float4 d1 = packed.data[1];
 
-    uint3 packed_normal_tangent = uint3(
-        asuint(d0.w), asuint(d1.x), asuint(d1.y));
-
+    uint3 packed_normal_tangent = uint3(asuint(d0.w), asuint(d1.x), asuint(d1.y));
     float3 normal;
     float4 tangent_and_sign;
     decodeNormalTangent(packed_normal_tangent, normal, tangent_and_sign);
@@ -55,7 +56,7 @@ Vertex unpackVertex(PackedVertex packed)
     vert.position = float3(d0.x, d0.y, d0.z);
     vert.normal = normal;
     vert.tangentAndSign = tangent_and_sign;
-    vert.uv = unpackHalf2x16(asuint(d1.z));
+    vert.uv = float2(d1.z, d1.w);
 
     return vert;
 }
@@ -135,6 +136,17 @@ void computeCompositeTransform(float3 obj_t,
 {
     to_view_translation = rotateVec(cam_r_inv, obj_t - cam_t);
     to_view_rotation = normalize(composeQuats(cam_r_inv, obj_r));
+}
+
+float4 projectToClip(PerspectiveCameraData view_data,
+                     float3 view_pos,
+                     float clip_z)
+{
+    return float4(
+        view_data.xScale * view_pos.x,
+        view_data.yScale * view_pos.z,
+        clip_z,
+        view_pos.y);
 }
 
 // We are basically packing 3 uints into 2. 21 bits per uint except for 22 

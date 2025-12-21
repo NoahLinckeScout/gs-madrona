@@ -655,9 +655,9 @@ Manager::Impl * Manager::Impl::make(
     bool use_rt = mgr_cfg.useRT;
 
     if (use_rt) {
-        printf("Using raytracer\n");
+        MADRONA_DEBUG_LOG("Using raytracer\n");
     } else {
-        printf("Using rasterizer\n");
+        MADRONA_DEBUG_LOG("Using raytracer\n");
     }
 
     Sim::Config sim_cfg;
@@ -685,6 +685,7 @@ Manager::Impl * Manager::Impl::make(
     float *cam_fovy = (float *)cu::allocGPU(sizeof(float) * gs_model.numCams);
     float *cam_zfar = (float *)cu::allocGPU(sizeof(float) * gs_model.numCams);
     float *cam_znear = (float *)cu::allocGPU(sizeof(float) * gs_model.numCams);
+    uint32_t *cam_proj_type = (uint32_t *)cu::allocGPU(sizeof(uint32_t) * gs_model.numCams);
 
     REQ_CUDA(cudaMemcpy(geom_types_gpu, gs_model.geomTypes, sizeof(int32_t) * gs_model.numGeoms, cudaMemcpyHostToDevice));
     REQ_CUDA(cudaMemcpy(geom_data_ids_gpu, gs_model.geomDataIDs, sizeof(int32_t) * gs_model.numGeoms, cudaMemcpyHostToDevice));
@@ -692,6 +693,7 @@ Manager::Impl * Manager::Impl::make(
     REQ_CUDA(cudaMemcpy(cam_fovy, gs_model.camFovy, sizeof(float) * gs_model.numCams, cudaMemcpyHostToDevice));
     REQ_CUDA(cudaMemcpy(cam_znear, gs_model.camZNear, sizeof(float) * gs_model.numCams, cudaMemcpyHostToDevice));
     REQ_CUDA(cudaMemcpy(cam_zfar, gs_model.camZFar, sizeof(float) * gs_model.numCams, cudaMemcpyHostToDevice));
+    REQ_CUDA(cudaMemcpy(cam_proj_type, gs_model.camProjType, sizeof(uint32_t) * gs_model.numCams, cudaMemcpyHostToDevice));
 
     sim_cfg.geomTypes = geom_types_gpu;
     sim_cfg.geomDataIDs = geom_data_ids_gpu;
@@ -699,6 +701,7 @@ Manager::Impl * Manager::Impl::make(
     sim_cfg.camFovy = cam_fovy;
     sim_cfg.camZNear = cam_znear;
     sim_cfg.camZFar = cam_zfar;
+    sim_cfg.camProjType = cam_proj_type;
 
     HeapArray<Sim::WorldInit> world_inits(mgr_cfg.numWorlds);
     Optional<CudaBatchRenderConfig> render_cfg = Optional<CudaBatchRenderConfig>::none();
@@ -754,6 +757,7 @@ Manager::Impl * Manager::Impl::make(
     cu::deallocGPU(cam_fovy);
     cu::deallocGPU(cam_znear);
     cu::deallocGPU(cam_zfar);
+    cu::deallocGPU(cam_proj_type);
 
     return new Impl {
         mgr_cfg,

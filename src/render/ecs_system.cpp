@@ -2,6 +2,8 @@
 #include <bit>
 #endif
 
+#include <algorithm>
+
 #include <madrona/mesh_bvh.hpp>
 #include <madrona/render/ecs.hpp>
 #include <madrona/components.hpp>
@@ -137,8 +139,7 @@ inline void instanceTransformUpdate(Context &ctx,
     data.position = pos;
     data.rotation = rot;
     data.scale = scale;
-
-    data.worldIDX = ctx.worldID().idx;
+    data.worldID = ctx.worldID().idx;
     data.objectID = obj_id.idx;
 
     // Get the root AABB from the model and translate it to store
@@ -251,20 +252,16 @@ inline void instanceTransformUpdateWithMat(Context &ctx,
     uint32_t instance_id = system_state.totalNumInstancesCPU->fetch_add<sync::acq_rel>(1);
 
     // Required for stable sorting on CPU
-    system_state.instanceWorldIDsCPU[instance_id] = 
-        ((uint64_t)ctx.worldID().idx << 32) | (uint64_t)e.id;
-
+    system_state.instanceWorldIDsCPU[instance_id] = ((uint64_t)ctx.worldID().idx << 32) | (uint64_t)e.id;
     InstanceData &data = system_state.instancesCPU[instance_id];
 #endif
 
     data.position = pos;
     data.rotation = rot;
     data.scale = scale;
-
     data.matID = mat.matID;
     data.color = color.color;
-
-    data.worldIDX = ctx.worldID().idx;
+    data.worldID = ctx.worldID().idx;
     data.objectID = obj_id.idx;
 
     // Get the root AABB from the model and translate it to store
@@ -300,11 +297,8 @@ inline void viewTransformUpdate(Context &ctx,
 #if defined(MADRONA_GPU_MODE)
     (void)e;
 
-    PerspectiveCameraData &cam_data = 
-        ctx.get<PerspectiveCameraData>(cam.cameraEntity);
-
-    ctx.get<RenderOutputIndex>(cam.cameraEntity).index = 
-        ctx.loc(e).row;
+    PerspectiveCameraData &cam_data = ctx.get<PerspectiveCameraData>(cam.cameraEntity);
+    ctx.get<RenderOutputIndex>(cam.cameraEntity).index = ctx.loc(e).row;
 
     auto raycast_output_width = mwGPU::GPUImplConsts::get().raycastOutputWidth;
     auto raycast_output_height = mwGPU::GPUImplConsts::get().raycastOutputHeight;
@@ -313,31 +307,28 @@ inline void viewTransformUpdate(Context &ctx,
         raycast_output_height != 0;
 
     if (raycast_enabled) {  
-        aspect_ratio = (float)raycast_output_width / 
-            (float)raycast_output_height;
+        aspect_ratio = (float)raycast_output_width / (float)raycast_output_height;
     }
 #else
     uint32_t view_id = system_state.totalNumViewsCPU->fetch_add<sync::acq_rel>(1);
 
     // Required for stable sorting on CPU
-    system_state.viewWorldIDsCPU[view_id] = 
-        ((uint64_t)ctx.worldID().idx << 32) | (uint64_t)e.id;
-
+    system_state.viewWorldIDsCPU[view_id] = ((uint64_t)ctx.worldID().idx << 32) | (uint64_t)e.id;
     PerspectiveCameraData &cam_data = system_state.viewsCPU[view_id];
 #endif
 
-    float x_scale = cam.fovScale / aspect_ratio;
-    float y_scale = -cam.fovScale;
-
-    cam_data.xScale = x_scale;
-    cam_data.yScale = y_scale;
+    float fov_scale = 1.0f / tanf(cam.halfFov);
+    cam_data.halfFov = cam.halfFov;
+    cam_data.xScale = fov_scale / aspect_ratio;
+    cam_data.yScale = -fov_scale;
     cam_data.zNear = cam.zNear;
     cam_data.zFar = cam.zFar;
+    cam_data.projectionType = static_cast<uint32_t>(cam.proj_type);
 
     Vector3 camera_pos = pos + cam.cameraOffset;
     cam_data.position = camera_pos;
     cam_data.rotation = rot.inv();
-    cam_data.worldIDX = ctx.worldID().idx;
+    cam_data.worldID = ctx.worldID().idx;
 }
 
 #ifdef MADRONA_GPU_MODE
@@ -478,7 +469,7 @@ void registerTypes(ECSRegistry &registry,
             ArchetypeFlags::None,
             bridge->maxViewsPerworld);
         registry.registerArchetype<RenderableArchetype>(
-            ComponentMetadataSelector<InstanceData,TLBVHNode>(ComponentFlags::ImportMemory,ComponentFlags::ImportMemory),
+            ComponentMetadataSelector<InstanceData, TLBVHNode>(ComponentFlags::ImportMemory,ComponentFlags::ImportMemory),
             ArchetypeFlags::ImportOffsets,
             bridge->maxInstancesPerWorld);
         registry.registerArchetype<LightArchetype>(
@@ -501,28 +492,19 @@ void registerTypes(ECSRegistry &registry,
     if (bridge) {
         auto *state_mgr = mwGPU::getStateManager();
 
-        state_mgr->setArchetypeWorldOffsets<RenderableArchetype>(
-            bridge->instanceOffsets);
-        state_mgr->setArchetypeWorldOffsets<RenderCameraArchetype>(
-            bridge->viewOffsets);
-        state_mgr->setArchetypeWorldOffsets<LightArchetype>(
-            bridge->lightOffsets);
+        state_mgr->setArchetypeWorldOffsets<RenderableArchetype>(bridge->instanceOffsets);
+        state_mgr->setArchetypeWorldOffsets<RenderCameraArchetype>(bridge->viewOffsets);
+        state_mgr->setArchetypeWorldOffsets<LightArchetype>(bridge->lightOffsets);
 
-        state_mgr->setArchetypeComponent<RenderableArchetype, InstanceData>(
-            bridge->instances);
-        state_mgr->setArchetypeComponent<RenderCameraArchetype, PerspectiveCameraData>(
-            bridge->views);
-        state_mgr->setArchetypeComponent<LightArchetype, LightDesc>(
-            bridge->lights);
-        state_mgr->setArchetypeComponent<RenderableArchetype, TLBVHNode>(
-            bridge->aabbs);
+        state_mgr->setArchetypeComponent<RenderableArchetype, InstanceData>(bridge->instances);
+        state_mgr->setArchetypeComponent<RenderCameraArchetype, PerspectiveCameraData>(bridge->views);
+        state_mgr->setArchetypeComponent<LightArchetype, LightDesc>(bridge->lights);
+        state_mgr->setArchetypeComponent<RenderableArchetype, TLBVHNode>(bridge->aabbs);
     }
 
 #if 0
     auto *state_mgr = mwGPU::getStateManager();
-    auto instance_ptr = (void *)state_mgr->getArchetypeComponent<
-        RenderableArchetype, InstanceData>();
-
+    auto instance_ptr = (void *)state_mgr->getArchetypeComponent<RenderableArchetype, InstanceData>();
     printf("From rendering system init, instance_ptr=%p\n", instance_ptr);
 #endif
 #else
@@ -647,8 +629,7 @@ TaskGraphNodeID setupTasks(TaskGraphBuilder &builder,
 #endif
 }
 
-void init(Context &ctx,
-          const RenderECSBridge *bridge)
+void init(Context &ctx, const RenderECSBridge *bridge)
 {
     auto &system_state = ctx.singleton<RenderingSystemState>();
 
@@ -673,9 +654,7 @@ void init(Context &ctx,
         system_state.lightWorldIDsCPU = bridge->lightWorldIDs;
 #endif
 
-        system_state.aspectRatio = 
-            (float)bridge->renderWidth / (float)bridge->renderHeight;
-
+        system_state.aspectRatio = (float)bridge->renderWidth / (float)bridge->renderHeight;
         system_state.voxels = bridge->voxels;
     }
 
@@ -687,8 +666,7 @@ void init(Context &ctx,
 #endif
 }
 
-void makeEntityRenderable(Context &ctx,
-                          Entity e)
+void makeEntityRenderable(Context &ctx, Entity e)
 {
     Entity render_entity = ctx.makeEntity<RenderableArchetype>();
     ctx.get<Renderable>(e).renderEntity = render_entity;
@@ -698,8 +676,7 @@ void makeEntityRenderable(Context &ctx,
     ctx.get<InstanceData>(render_entity).color = 0;
 }
 
-void disableEntityRenderable(Context &ctx,
-                             Entity e)
+void disableEntityRenderable(Context &ctx, Entity e)
 {
     ctx.get<Renderable>(e).renderEntity = Entity::none();
 }
@@ -709,65 +686,62 @@ void attachEntityToView(Context &ctx,
                         float vfov_degrees,
                         float z_near,
                         float z_far,
-                        const math::Vector3 &camera_offset)
+                        const math::Vector3 &camera_offset,
+                        uint32_t proj_type)
 {
-    float fov_scale = 1.0f / tanf(toRadians(vfov_degrees * 0.5f));
-
+    float half_fov = toRadians(vfov_degrees * 0.5f);
     Entity camera_entity = ctx.makeEntity<RenderCameraArchetype>();
     ctx.get<RenderCamera>(e) = { 
-        camera_entity, fov_scale, z_near, z_far, camera_offset 
+        camera_entity,
+        half_fov,
+        z_near,
+        z_far,
+        camera_offset,
+        proj_type,
     };
-
-    PerspectiveCameraData &cam_data = 
-        ctx.get<PerspectiveCameraData>(camera_entity);
-
+    
+    PerspectiveCameraData &cam_data = ctx.get<PerspectiveCameraData>(camera_entity);
     auto &state = ctx.singleton<RenderingSystemState>();
-
     float aspect_ratio = state.aspectRatio;
+    bool raycast_enabled = false;
+
 #ifdef MADRONA_GPU_MODE
     auto raycast_output_width = mwGPU::GPUImplConsts::get().raycastOutputWidth;
     auto raycast_output_height = mwGPU::GPUImplConsts::get().raycastOutputHeight;
-
-    bool raycast_enabled = 
-        raycast_output_width != 0 && 
-        raycast_output_height != 0;
+    raycast_enabled = raycast_output_width != 0 && raycast_output_height != 0;
     if (raycast_enabled) {  
-        aspect_ratio = (float)raycast_output_width / 
-            (float)raycast_output_height;
+        aspect_ratio = (float)raycast_output_width / (float)raycast_output_height;
     }
-#else
-    bool raycast_enabled = false;
 #endif
 
-    float x_scale = fov_scale / aspect_ratio;
-    float y_scale = -fov_scale;
-
+    float fov_scale = 1.0f / tanf(half_fov);
     cam_data = PerspectiveCameraData {
         { /* Position */ }, 
         { /* Rotation */ }, 
-        x_scale, y_scale, 
+        fov_scale / aspect_ratio,     // xScale
+        -fov_scale,                   // yScale
         z_near, 
         z_far,
-        ctx.worldID().idx
+        ctx.worldID().idx,
+        half_fov,
+        proj_type,  // projectionType
+        { /* Pad */ }
     };
 
     if (raycast_enabled) {
         Entity render_output_entity = ctx.makeEntity<RaycastOutputArchetype>();
-
         RenderOutputRef &ref = ctx.get<RenderOutputRef>(camera_entity);
         ref.outputEntity = render_output_entity;
     }
 }
 
-void cleanupViewingEntity(Context &ctx,
-                          Entity e)
+void cleanupViewingEntity(Context &ctx, Entity e)
 {
     Entity view_entity = ctx.get<RenderCamera>(e).cameraEntity;
     ctx.destroyEntity(view_entity);
 }
 
-void cleanupRenderableEntity(Context &ctx,
-                             Entity e)
+void cleanupRenderableEntity(Context &ctx, Entity e)
 {
     Entity render_entity = ctx.get<Renderable>(e).renderEntity;
     ctx.destroyEntity(render_entity);

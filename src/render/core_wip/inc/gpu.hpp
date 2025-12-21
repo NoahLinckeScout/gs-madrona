@@ -57,8 +57,7 @@ private:
 
 class GPU {
 public:
-    inline GPU(backend::Backend &backend,
-               const backend::DeviceID &dev_id);
+    inline GPU(backend::Backend &backend, const backend::DeviceID &dev_id);
 
     TextureHandle makeTex2D(int32_t width, int32_t height, TexFormat fmt);
     BufferHandle makeBuffer(int32_t num_bytes);

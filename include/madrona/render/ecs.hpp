@@ -7,14 +7,18 @@ namespace madrona::render {
 
 // This will be attached to any entity that wants to be a viewer
 struct RenderCamera {
-    Entity cameraEntity;
 
-    // 1.0 / tanf(fovy * 0.5)
-    float fovScale;
+    enum {
+        Perspective = 0,
+        EquidistantFisheye = 1,
+    };
+
+    Entity cameraEntity;
+    float halfFov;        // 1.0 / tanf(fovy * 0.5)
     float zNear;
     float zFar;
-
     math::Vector3 cameraOffset;
+    uint32_t proj_type;
 };
 
 // This will be attached to any renderable entity
@@ -25,8 +29,6 @@ struct Renderable {
 struct LightCarrier {
     Entity light;
 };
-
-
 
 
 // For private usage - not to be used by user.
@@ -40,7 +42,10 @@ struct alignas(16) PerspectiveCameraData {
     float yScale;
     float zNear;
     float zFar;
-    int32_t worldIDX;
+    int32_t worldID;
+    float halfFov;
+    uint32_t projectionType;
+    int32_t pad[2];
 };
 
 // For private usage - not to be used by user.
@@ -49,65 +54,43 @@ struct alignas(16) InstanceData {
     math::Quat rotation;
     math::Diag3x3 scale;
 
-    // If this is -1, we just use whatever default material the model
-    // has defined for it.
-    //
+    // If this is -1, we just use whatever default material the model has defined for it.
     // If this is -2, we use the color at the end of this struct.
     int32_t matID;
-
     int32_t objectID;
-    int32_t worldIDX;
-
+    int32_t worldID;
     uint32_t color;
+    int32_t pad[2];
 };
 
 // This is all the data required to configure a light. The actual
 // data is read in / written to through SOA.
 struct alignas(16) LightDesc {
-    // Only affects the spotlight (defaults to 0 0 0).
-    math::Vector3 position;
 
-    // Affects both directional/spotlight.
-    math::Vector3 direction;
-
-    // Color
-    uint32_t color;
-
-    // Angle for the spotlight (default to pi/4).
-    float cutoffAngle;
-
-    // Attenuation factor (default to 0.1).
-    float attenuation;
-
-    // Intensity of the light. (1.f is default)
-    float intensity;
-
-    enum Type : uint8_t {
+    enum {
         Spotlight = 0,
         Directional = 1
     };
 
-    // Type of the light.
-    Type type;
-
-    // Whether the light casts a shadow.
-    uint8_t castShadow;
-
-    // Gives ability to turn light on or off.
-    uint8_t active;
-
+    math::Vector3 position;     // Only affects the spotlight (defaults to 0 0 0).
+    math::Vector3 direction;    // Affects both directional/spotlight.
+    uint32_t color;         // RGBA color
+    float cutoffAngle;      // Angle for the spotlight (default to pi/4).
+    float attenuation;      // Attenuation factor (default to 0.1).
+    float intensity;        // Intensity of the light. (1.f is default)
+    uint8_t type;           // Type of the light.
+    uint8_t castShadow;    // Whether the light casts a shadow.
+    uint8_t active;        // Gives ability to turn light on or off.
     uint8_t padding1 = 0;
     float padding2 = 0.f;
 };
 
 struct LightDescDirection : math::Vector3 {
-    LightDescDirection(math::Vector3 v)
-        : Vector3(v)
-    {}
+    LightDescDirection(math::Vector3 v): Vector3(v) {}
 };
 
 struct LightDescType {
-    LightDesc::Type type;
+    uint8_t type;
 };
 
 struct LightDescShadow {
@@ -130,9 +113,7 @@ struct LightDescActive {
     uint8_t active;
 };
 
-struct LightArchetype : public Archetype<
-    LightDesc
-> {};
+struct LightArchetype : public Archetype<LightDesc> {};
 
 struct RenderOptions {
     bool outputs[4];
@@ -214,33 +195,22 @@ namespace RenderingSystem {
         Span<const TaskGraphNodeID> deps,
         bool update_visual_properties = false);
 
-    void init(Context &ctx,
-              const RenderECSBridge *bridge);
-
+    void init(Context &ctx, const RenderECSBridge *bridge);
     uint32_t * getVoxelPtr(Context &ctx);
-
-    void makeEntityRenderable(Context &ctx,
-                              Entity e);
-    
-    void disableEntityRenderable(Context &ctx,
-                                 Entity e);
-
+    void makeEntityRenderable(Context &ctx, Entity e);
+    void disableEntityRenderable(Context &ctx, Entity e);
     void attachEntityToView(Context &ctx,
                             Entity e,
                             float vfov_degrees,
                             float z_near,
                             float z_far,
-                            const math::Vector3 &camera_offset);
+                            const math::Vector3 &camera_offset,
+                            uint32_t proj_type);
 
     // Need to call these before destroying entities
-    void cleanupViewingEntity(Context &ctx,
-                              Entity e);
-    void cleanupRenderableEntity(Context &ctx,
-                                 Entity e);
-
-
-    void makeEntityLightCarrier(Context &ctx,
-                                Entity e);
+    void cleanupViewingEntity(Context &ctx,Entity e);
+    void cleanupRenderableEntity(Context &ctx, Entity e);
+    void makeEntityLightCarrier(Context &ctx, Entity e);
 };
 
 }

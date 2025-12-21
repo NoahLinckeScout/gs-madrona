@@ -694,9 +694,7 @@ static PipelineMP<1> makeComputePipeline(const vk::Device &dev,
     layout_info.pPushConstantRanges = &push_const;
 
     VkPipelineLayout layout;
-    REQ_VK(dev.dt.createPipelineLayout(dev.hdl, &layout_info, nullptr,
-                                       &layout));
-
+    REQ_VK(dev.dt.createPipelineLayout(dev.hdl, &layout_info, nullptr, &layout));
     std::array<VkComputePipelineCreateInfo, 1> compute_infos;
 
     compute_infos[0].sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;

@@ -126,12 +126,10 @@ void Sim::setupTasks(TaskGraphManager &taskgraph_mgr, const Config &cfg)
     TaskGraphBuilder &init_builder = taskgraph_mgr.init(TaskGraphID::Init);
     setupInitTasks(init_builder, cfg);
 
-    TaskGraphBuilder &render_init_builder =
-        taskgraph_mgr.init(TaskGraphID::RenderInit);
+    TaskGraphBuilder &render_init_builder = taskgraph_mgr.init(TaskGraphID::RenderInit);
     setupRenderTasks(render_init_builder, {}, true);
 
-    TaskGraphBuilder &render_tasks_builder =
-        taskgraph_mgr.init(TaskGraphID::Render);
+    TaskGraphBuilder &render_tasks_builder = taskgraph_mgr.init(TaskGraphID::Render);
     setupRenderTasks(render_tasks_builder, {}, false);
 }
 
@@ -178,7 +176,13 @@ Sim::Sim(Engine &ctx,
         ctx.get<Position>(cam) = Vector3::zero();
         ctx.get<Rotation>(cam) = Quat { 1, 0, 0, 0 };
         render::RenderingSystem::attachEntityToView(
-            ctx, cam, cfg.camFovy[cam_idx], cfg.camZNear[cam_idx], cfg.camZFar[cam_idx], Vector3::zero());
+            ctx, cam,
+            cfg.camFovy[cam_idx],
+            cfg.camZNear[cam_idx],
+            cfg.camZFar[cam_idx],
+            Vector3::zero(),
+            cfg.camProjType[cam_idx]
+        );
     }
     
     for (CountT light_idx = 0; light_idx < (CountT)cfg.numLights; light_idx++) {
@@ -187,7 +191,7 @@ Sim::Sim(Engine &ctx,
         ctx.get<Position>(light) = Vector3::zero();
         ctx.get<render::LightDescDirection>(light) = Vector3{0.f, 0.f, -1.0f};
         ctx.get<ColorOverride>(light) = ColorOverride { 0 };
-        ctx.get<render::LightDescType>(light).type = render::LightDesc::Type::Directional;
+        ctx.get<render::LightDescType>(light).type = render::LightDesc::Directional;
         ctx.get<render::LightDescShadow>(light).castShadow = false;
         ctx.get<render::LightDescCutoffAngle>(light).cutoffAngle = 3.14f;
         ctx.get<render::LightDescAttenuation>(light).attenuation = 0.1f;

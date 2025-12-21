@@ -113,3 +113,23 @@
 #else
 #define MADRONA_UNROLL
 #endif
+
+// Warning and error macros - always visible in all builds
+#if __cplusplus >= 202002L
+#define MADRONA_WARN(fmt, ...) ::fprintf(stderr, "[Madrona] [WARN] " fmt __VA_OPT__(,) __VA_ARGS__)
+#define MADRONA_ERROR(fmt, ...) ::fprintf(stderr, "[Madrona] [ERROR] " fmt __VA_OPT__(,) __VA_ARGS__)
+#else
+#define MADRONA_WARN(fmt, ...) ::fprintf(stderr, "[Madrona] [WARN] " fmt, ##__VA_ARGS__)
+#define MADRONA_ERROR(fmt, ...) ::fprintf(stderr, "[Madrona] [ERROR] " fmt, ##__VA_ARGS__)
+#endif
+
+// Debug logging macros - only print when NDEBUG is not defined (debug builds)
+#ifndef NDEBUG
+#if __cplusplus >= 202002L
+#define MADRONA_DEBUG_LOG(fmt, ...) ::printf("[Madrona] [DEBUG] " fmt __VA_OPT__(,) __VA_ARGS__)
+#else
+#define MADRONA_DEBUG_LOG(fmt, ...) ::printf("[Madrona] [DEBUG] " fmt, ##__VA_ARGS__)
+#endif
+#else
+#define MADRONA_DEBUG_LOG(fmt, ...) ((void)0)
+#endif

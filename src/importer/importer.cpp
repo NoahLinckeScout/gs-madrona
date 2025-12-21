@@ -1,4 +1,5 @@
 #include <madrona/importer.hpp>
+#include <madrona/macros.hpp>
 
 #include <madrona/dyn_array.hpp>
 #include <madrona/heap_array.hpp>
@@ -112,8 +113,7 @@ Optional<ImportedAssets> AssetImporter::Impl::importFromDisk(
                 path, imported, one_object_per_asset, imgImporter);
 #else
             load_success = false;
-            snprintf(err_buf.data(), err_buf.size(),
-                     "Madrona not compiled with glTF support");
+            snprintf(err_buf.data(), err_buf.size(), "Madrona not compiled with glTF support");
 #endif
         } else if (extension == "usd" ||
                    extension == "usda" ||
@@ -128,13 +128,12 @@ Optional<ImportedAssets> AssetImporter::Impl::importFromDisk(
                 path, imported, one_object_per_asset, imgImporter);
 #else
             load_success = false;
-            snprintf(err_buf.data(), err_buf.size(),
-                     "Madrona not compiled with USD support");
+            snprintf(err_buf.data(), err_buf.size(), "Madrona not compiled with USD support");
 #endif
         }
 
         if (!load_success) {
-            printf("Load failed\n");
+            MADRONA_WARN("Load failed\n");
             break;
         }
     }

@@ -47,8 +47,7 @@ void RenderManager::batchRender(const RenderOptions &render_options)
 
     rctx_->batchRenderer->setRenderOptions(render_options);
     rctx_->batchRenderer->prepareForRendering(info, &rctx_->engine_interop_);
-    rctx_->batchRenderer->renderViews(
-        info, rctx_->loaded_assets_, &rctx_->engine_interop_, *rctx_);
+    rctx_->batchRenderer->renderViews(info, rctx_->loaded_assets_, &rctx_->engine_interop_, *rctx_);
 }
 
 const uint8_t *RenderManager::batchRendererRGBOut() const

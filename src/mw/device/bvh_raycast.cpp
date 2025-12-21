@@ -9,19 +9,19 @@
 #include <madrona/mesh_bvh.hpp>
 #include <madrona/mw_gpu/host_print.hpp>
 
-#if 0
+#ifndef NDEBUG
 #define LOG_RECURSE(...) mwGPU::HostPrint::log(__VA_ARGS__)
 #else
 #define LOG_RECURSE(...)
 #endif
 
-#if 0
+#ifndef NDEBUG
 #define LOG_INST(...) mwGPU::HostPrint::log(__VA_ARGS__)
 #else
 #define LOG_INST(...)
 #endif
 
-#if 1
+#ifndef NDEBUG
 #define LOG(...) mwGPU::HostPrint::log(__VA_ARGS__)
 #else
 #define LOG(...)
@@ -43,31 +43,28 @@ inline Vector3 calculateOutRay(PerspectiveCameraData *view_data,
                                uint32_t pixel_x, uint32_t pixel_y)
 {
     Quat rot = view_data->rotation;
-    Vector3 ray_start = view_data->position;
     Vector3 look_at = rot.inv().rotateVec({0, 1, 0});
+    Vector3 forward = look_at.normalize();
+    Vector3 u = rot.inv().rotateVec({1, 0, 0}).normalize();
+    Vector3 v = cross(forward, u).normalize();
+    float ndc_x = ((float)pixel_x + 0.5f) / (float)bvhParams.renderOutputWidth * 2.0f - 1.0f;
+    float ndc_y = ((float)pixel_y + 0.5f) / (float)bvhParams.renderOutputHeight * 2.0f - 1.0f;
+    Vector3 ray_dir = Vector3(0, 0, 0);
  
-    // const float h = tanf(theta / 2);
-    const float w = 1.0f / view_data->xScale;
-    const float h = 1.0f / -view_data->yScale;
-
-    const auto viewport_height = 2 * h;
-    const auto viewport_width = 2 * w;
-    const auto forward = look_at.normalize();
-
-    auto u = rot.inv().rotateVec({1, 0, 0});
-    auto v = cross(forward, u).normalize();
-
-    auto horizontal = u * viewport_width;
-    auto vertical = v * viewport_height;
-
-    auto lower_left_corner = ray_start - horizontal / 2 - vertical / 2 + forward;
-  
-    float pixel_u = ((float)pixel_x + 0.5f) / (float)bvhParams.renderOutputWidth;
-    float pixel_v = ((float)pixel_y + 0.5f) / (float)bvhParams.renderOutputHeight;
-
-    Vector3 ray_dir = lower_left_corner + pixel_u * horizontal + 
-        pixel_v * vertical - ray_start;
-    ray_dir = ray_dir.normalize();
+    if (view_data->projectionType == static_cast<uint32_t>(RenderCamera::Perspective)) {
+        // const float h = tanf(theta / 2);
+        const float w = 1.0f / view_data->xScale;
+        const float h = 1.0f / -view_data->yScale;
+        ray_dir = (ndc_x * w * u + ndc_y * h * v + forward).normalize();
+    } else {
+        const float aspect = -view_data->yScale / view_data->xScale;
+        float sx = ndc_x, sy = ndc_y;
+        if (aspect > 1.0f) sx *= aspect; else sy /= aspect;
+        const float rho = sqrtf(sx * sx + sy * sy);
+        const float theta = rho * view_data->halfFov;
+        const float plane_scale = tanf(theta) / rho;
+        ray_dir = (sx * plane_scale * u + sy * plane_scale * v + forward).normalize();
+    }
 
     return ray_dir;
 }
@@ -757,7 +754,7 @@ static __device__ TraceResult traceRay(
             } else if (material_idx != -1) {
                 Material *mat = &bvhParams.materials[material_idx];
                 if (mat->numTextures > 0) {
-                    int32_t texture_idx = bvhParams.materialTextures[mat->textureOffset + instance->worldIDX % mat->numTextures];
+                    int32_t texture_idx = bvhParams.materialTextures[mat->textureOffset + instance->worldID % mat->numTextures];
                     cudaTextureObject_t *tex = bvhParams.textures + texture_idx;
 
                     // --- Mipmap LOD selection ---
@@ -901,7 +898,7 @@ static __device__ FragmentResult computeFragment(
 
             Vector3 ray_dir;
             float attenuating_factor = 1.f;
-            if (light.type == LightDesc::Type::Directional) {
+            if (light.type == LightDesc::Directional) {
                 ray_dir = light.direction.normalize();
             } else {
                 attenuating_factor = compute_attenuating((hit_pos - light.position).length(), light.attenuation);
@@ -991,7 +988,7 @@ extern "C" __global__ void bvhRaycastEntry()
     while (current_view_offset < total_num_views) {
         // While we still have views to generate, trace.
         PerspectiveCameraData *view_data = &bvhParams.views[current_view_offset];
-        uint32_t world_idx = (uint32_t)view_data->worldIDX;
+        uint32_t world_idx = (uint32_t)view_data->worldID;
         Vector3 ray_start = view_data->position;
         Vector3 ray_dir = calculateOutRay(view_data, pixel_x, pixel_y);
 

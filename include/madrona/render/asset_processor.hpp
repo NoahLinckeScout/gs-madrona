@@ -12,9 +12,7 @@ namespace madrona::render {
 
 namespace AssetProcessor {
 #ifdef MADRONA_CUDA_SUPPORT
-    MeshBVHData makeBVHData(
-        Span<const imp::SourceObject> src_objs);
-
+    MeshBVHData makeBVHData(Span<const imp::SourceObject> src_objs);
     MaterialData initMaterialData(
         const imp::SourceMaterial *materials,
         uint32_t num_materials,
@@ -22,8 +20,7 @@ namespace AssetProcessor {
         uint32_t num_textures);
 #endif
 
-    math::AABB *makeAABBs(
-            Span<const imp::SourceObject> src_objs);
+    math::AABB *makeAABBs(Span<const imp::SourceObject> src_objs);
 };
 
 }

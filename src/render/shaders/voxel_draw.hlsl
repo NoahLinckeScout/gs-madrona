@@ -63,12 +63,7 @@ float4 vert(in uint vid : SV_VertexID,
         rotateVec(to_view_rotation, objectScale * vert.position) +
             to_view_translation;
 
-    float4 clip_pos = float4(
-        view_data.xScale * view_pos.x,
-        view_data.yScale * view_pos.z,
-        view_data.zNear,
-        view_pos.y);
-
+    float4 clip_pos = projectToClip(view_data, view_pos, view_data.zNear);
     // v2f.viewPos = view_pos;
 #if 0
     v2f.normal = normalize(
