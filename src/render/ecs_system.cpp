@@ -323,7 +323,7 @@ inline void viewTransformUpdate(Context &ctx,
     cam_data.yScale = -fov_scale;
     cam_data.zNear = cam.zNear;
     cam_data.zFar = cam.zFar;
-    cam_data.projectionType = static_cast<uint32_t>(cam.projection);
+    cam_data.projectionType = static_cast<uint32_t>(cam.proj_type);
 
     Vector3 camera_pos = pos + cam.cameraOffset;
     cam_data.position = camera_pos;
@@ -687,7 +687,7 @@ void attachEntityToView(Context &ctx,
                         float z_near,
                         float z_far,
                         const math::Vector3 &camera_offset,
-                        RenderCamera::Projection projection)
+                        uint32_t proj_type)
 {
     float half_fov = toRadians(vfov_degrees * 0.5f);
     Entity camera_entity = ctx.makeEntity<RenderCameraArchetype>();
@@ -697,7 +697,7 @@ void attachEntityToView(Context &ctx,
         z_near,
         z_far,
         camera_offset,
-        projection,
+        proj_type,
     };
     
     PerspectiveCameraData &cam_data = ctx.get<PerspectiveCameraData>(camera_entity);
@@ -724,7 +724,7 @@ void attachEntityToView(Context &ctx,
         z_far,
         ctx.worldID().idx,
         half_fov,
-        static_cast<uint32_t>(projection),  // projectionType
+        proj_type,  // projectionType
         { /* Pad */ }
     };
 

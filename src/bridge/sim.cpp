@@ -181,7 +181,7 @@ Sim::Sim(Engine &ctx,
             cfg.camZNear[cam_idx],
             cfg.camZFar[cam_idx],
             Vector3::zero(),
-            static_cast<render::RenderCamera::Projection>(cfg.camProjType[cam_idx])
+            cfg.camProjType[cam_idx]
         );
     }
     
@@ -191,7 +191,7 @@ Sim::Sim(Engine &ctx,
         ctx.get<Position>(light) = Vector3::zero();
         ctx.get<render::LightDescDirection>(light) = Vector3{0.f, 0.f, -1.0f};
         ctx.get<ColorOverride>(light) = ColorOverride { 0 };
-        ctx.get<render::LightDescType>(light).type = render::LightDesc::Type::Directional;
+        ctx.get<render::LightDescType>(light).type = render::LightDesc::Directional;
         ctx.get<render::LightDescShadow>(light).castShadow = false;
         ctx.get<render::LightDescCutoffAngle>(light).cutoffAngle = 3.14f;
         ctx.get<render::LightDescAttenuation>(light).attenuation = 0.1f;

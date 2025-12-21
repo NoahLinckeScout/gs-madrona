@@ -51,7 +51,7 @@ inline Vector3 calculateOutRay(PerspectiveCameraData *view_data,
     float ndc_y = ((float)pixel_y + 0.5f) / (float)bvhParams.renderOutputHeight * 2.0f - 1.0f;
     Vector3 ray_dir = Vector3(0, 0, 0);
  
-    if (view_data->projectionType == static_cast<uint32_t>(RenderCamera::Projection::Perspective)) {
+    if (view_data->projectionType == static_cast<uint32_t>(RenderCamera::Perspective)) {
         // const float h = tanf(theta / 2);
         const float w = 1.0f / view_data->xScale;
         const float h = 1.0f / -view_data->yScale;
@@ -898,7 +898,7 @@ static __device__ FragmentResult computeFragment(
 
             Vector3 ray_dir;
             float attenuating_factor = 1.f;
-            if (light.type == LightDesc::Type::Directional) {
+            if (light.type == LightDesc::Directional) {
                 ray_dir = light.direction.normalize();
             } else {
                 attenuating_factor = compute_attenuating((hit_pos - light.position).length(), light.attenuation);
