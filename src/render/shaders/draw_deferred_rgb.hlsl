@@ -31,7 +31,6 @@ RWStructuredBuffer<uint32_t> normalOutputBuffer;
 [[vk::binding(7, 0)]]
 RWStructuredBuffer<int> segmentationOutputBuffer;
 
-
 [[vk::binding(8, 0)]]
 SamplerState linearSampler;
 
@@ -111,6 +110,14 @@ uint3 getPixelOffset(uint view_idx)
 void lighting(uint3 idx : SV_DispatchThreadID)
 {
     uint view_idx = idx.z;
+
+#if 1   // Used to suppress validation layer errors by referencing unused bound resources
+    uint something = 0;
+    something += engineInstanceBuffer[0].data[0].x;
+    something += instanceOffsets[0];
+    something += viewDataBuffer[0].data[0].x;
+#endif
+
     if (idx.x >= pushConst.viewWidth || idx.y >= pushConst.viewHeight) {
         return;
     }
@@ -142,7 +149,7 @@ void lighting(uint3 idx : SV_DispatchThreadID)
             float tan_theta = tan(theta);
             float2 plane_dir = rho > 1e-5f ? scale_ndc / rho : float2(0.0f, 0.0f);
             float3 dir = float3(plane_dir.x * tan_theta, 1.0f, plane_dir.y * tan_theta);
-            
+
             float2 image_plane_ndc = float2(dir.x, dir.z);    // intersection with y=1
             float2 persp_ndc = image_plane_ndc * float2(view_data.xScale, view_data.yScale);   // yScale filped ndc
             sample_px = (persp_ndc * 0.5f + 0.5f) * (view_span - 1.0f);
