@@ -52,19 +52,19 @@ inline Vector3 calculateOutRay(PerspectiveCameraData *view_data,
     float ndc_y = ((float)pixel_y + 0.5f) / (float)bvhParams.renderOutputHeight * 2.0f - 1.0f;
     Vector3 ray_dir = Vector3(0, 0, 0);
  
-    if (view_data->projectionType == RenderCamera::Projection::Perspective) {
+    if (view_data->projectionType == static_cast<uint32_t>(RenderCamera::Projection::Perspective)) {
         // const float h = tanf(theta / 2);
         const float w = 1.0f / view_data->xScale;
         const float h = 1.0f / -view_data->yScale;
-        ray_dir = (ndc_x * u * w + ndc_y * v * h + forward).normalize();
+        ray_dir = (ndc_x * w * u + ndc_y * h * v + forward).normalize();
     } else {
-        const float rho = sqrtf(ndc_x * ndc_x + ndc_y * ndc_y);
+        const float aspect = -view_data->yScale / view_data->xScale;
+        float sx = ndc_x, sy = ndc_y;
+        if (aspect > 1.0f) sx *= aspect; else sy /= aspect;
+        const float rho = sqrtf(sx * sx + sy * sy);
         const float theta = rho * view_data->halfFov;
-        const float sin_theta = sinf(theta);
-        const float cos_theta = cosf(theta);
-        ray_dir = (ndc_x * sin_theta * u + 
-                   ndc_y * sin_theta * v +
-                   cos_theta * forward).normalize();
+        const float plane_scale = tanf(theta) / rho;
+        ray_dir = (sx * plane_scale * u + sy * plane_scale * v + forward).normalize();
     }
 
     return ray_dir;

@@ -139,18 +139,13 @@ void lighting(uint3 idx : SV_DispatchThreadID)
             sample_valid = false;
         } else {
             float theta = rho * view_data.halfFov;
-            float sin_theta = sin(theta);
-            float cos_theta = cos(theta);
+            float tan_theta = tan(theta);
             float2 plane_dir = rho > 1e-5f ? scale_ndc / rho : float2(0.0f, 0.0f);
-            float3 dir = float3(plane_dir.x * sin_theta, cos_theta, plane_dir.y * sin_theta);
-
-            if (dir.y <= 1e-5f) {
-                sample_valid = false;
-            } else {
-                float2 image_plane_ndc = float2(dir.x / dir.y, dir.z / dir.y);    // intersection with y=1
-                float2 persp_ndc = image_plane_ndc * float2(view_data.xScale, view_data.yScale);   // yScale filped ndc
-                sample_px = (persp_ndc * 0.5f + 0.5f) * (view_span - 1.0f);
-            }
+            float3 dir = float3(plane_dir.x * tan_theta, 1.0f, plane_dir.y * tan_theta);
+            
+            float2 image_plane_ndc = float2(dir.x, dir.z);    // intersection with y=1
+            float2 persp_ndc = image_plane_ndc * float2(view_data.xScale, view_data.yScale);   // yScale filped ndc
+            sample_px = (persp_ndc * 0.5f + 0.5f) * (view_span - 1.0f);
         }
     }
 
