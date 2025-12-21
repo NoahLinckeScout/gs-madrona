@@ -43,7 +43,6 @@ inline Vector3 calculateOutRay(PerspectiveCameraData *view_data,
                                uint32_t pixel_x, uint32_t pixel_y)
 {
     Quat rot = view_data->rotation;
-    Vector3 ray_start = view_data->position;
     Vector3 look_at = rot.inv().rotateVec({0, 1, 0});
     Vector3 forward = look_at.normalize();
     Vector3 u = rot.inv().rotateVec({1, 0, 0}).normalize();
