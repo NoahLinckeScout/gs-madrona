@@ -87,6 +87,7 @@ static inline Optional<render::RenderManager> initRenderManager(
         .renderMode = render::RenderManager::Config::RenderMode::RGBD,
         .agentViewWidth = mgr_cfg.batchRenderViewWidth,
         .agentViewHeight = mgr_cfg.batchRenderViewHeight,
+        .maxTextures = gs_model.numTextures > 0 ? gs_model.numTextures : 1,
         .numWorlds = mgr_cfg.numWorlds,
         .maxViewsPerWorld = gs_model.numCams,
         .maxLightsPerWorld = gs_model.numLights,
