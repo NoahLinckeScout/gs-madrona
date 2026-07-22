@@ -65,7 +65,7 @@ uint32_t float3ToUint32(float3 v)
 {
     // Deferred RGB is LDR; tone-map HDR lighting before packing it into bytes.
     uint3 quant = (uint3)(255.0f * clamp(v, 0.0f, 1.0f));
-    return quant.r | (quant.g << 8) | (quant.b << 16) | (255 << 24);
+    return quant.r | (quant.g << 8) | (quant.b << 16) | ((uint32_t)255 << 24);
 }
 
 float linearToSRGB(float v)
