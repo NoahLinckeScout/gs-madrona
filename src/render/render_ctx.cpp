@@ -1258,16 +1258,32 @@ static uint32_t validateTextureCapacity(
     VkPhysicalDeviceProperties properties;
     backend.dt.getPhysicalDeviceProperties(dev.phy, &properties);
     const VkPhysicalDeviceLimits &limits = properties.limits;
-    // BatchRenderer allocates two sampled-image descriptor arrays with this
-    // capacity: one for base-color textures and one for emissive textures.
-    if (max_textures > limits.maxPerStageDescriptorSampledImages / 2 ||
-            max_textures > limits.maxDescriptorSetSampledImages / 2) {
+
+    // The BatchRenderer draw pipeline binds the widest set of sampled-image
+    // arrays of any pipeline: two arrays of this capacity in the fragment
+    // stage (base-color and emissive). That path therefore dominates the
+    // limit check, so every array must fit within both the per-stage and the
+    // whole-set sampled-image budgets. This is a conservative bound: it treats
+    // the two texture arrays as the only sampled images in the stage, leaving
+    // the remaining headroom for the engine's few auxiliary bindings (shadow
+    // maps, sky).
+    constexpr uint32_t texture_arrays_per_stage = 2;
+    const uint32_t per_stage_cap =
+        limits.maxPerStageDescriptorSampledImages / texture_arrays_per_stage;
+    const uint32_t per_set_cap =
+        limits.maxDescriptorSetSampledImages / texture_arrays_per_stage;
+    const uint32_t capacity_cap =
+        per_stage_cap < per_set_cap ? per_stage_cap : per_set_cap;
+    if (max_textures > capacity_cap) {
         FATAL(
-            "Requested texture descriptor capacity %u exceeds half the Vulkan "
-            "sampled-image limits because BatchRenderer allocates two "
-            "sampled-image descriptor arrays (maxPerStageDescriptorSampledImages=%u, "
-            "maxDescriptorSetSampledImages=%u)",
+            "Requested texture descriptor capacity %u exceeds the supported "
+            "maximum of %u for this device: BatchRenderer binds %u sampled-image "
+            "arrays of this capacity, and the Vulkan limits are "
+            "maxPerStageDescriptorSampledImages=%u, "
+            "maxDescriptorSetSampledImages=%u",
             max_textures,
+            capacity_cap,
+            texture_arrays_per_stage,
             limits.maxPerStageDescriptorSampledImages,
             limits.maxDescriptorSetSampledImages);
     }
@@ -1917,7 +1933,9 @@ CountT RenderContext::loadObjects(Span<const imp::SourceObject> src_objs,
     if (textures.size() > max_textures_) {
         FATAL(
             "Render asset has %u textures, exceeding the configured texture "
-            "descriptor capacity of %u",
+            "descriptor capacity of %u. The capacity is fixed when the renderer "
+            "is created; reserve more by passing a larger 'max_textures' at "
+            "construction, or reduce the scene's texture count",
             (uint32_t)textures.size(), max_textures_);
     }
 
